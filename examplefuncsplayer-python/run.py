@@ -29,6 +29,30 @@ gc.queue_research(bc.UnitType.Knight)
 
 my_team = gc.team()
 
+def build_rocket(worker_id, direction):
+    '''
+    worker_id = unit.id (?)
+    builds a Rocket
+    not sure what to do about direction
+    before using, check if can_build and if can_blueprint
+    keep building it by hte worker until structure_is_built (4 rounds)
+    '''
+
+    gc.blueprint(self, unit.id, rocket, random.choice(directions)) # idk which direction we want
+    gc.build(self, unit.id, blueprint.id) # what is blueprint_id?\
+
+def launch_rocket(rocket_id, destination):
+    if gc.can_launch_rocket(self, rocket_id, destination) == True:
+        #destination: read in Jordan's map, maybe loop through, find good places to land,land there
+        #load rocket
+
+        for rob in robots:
+            if can_load(self, structure_id, robot_id):
+                load(self, structure_id, robot_id))
+
+                gc.launch_rocket(self, rocket_id, location) #same fo rlocation :(
+
+
 while True:
     # We only support Python 3, which means brackets around print()
     print('pyround:', gc.round(), 'time left:', gc.get_time_left_ms(), 'ms')
