@@ -40,6 +40,12 @@ class mmap():
 				print(buildstr)
 
 
+def update_kmap(kmap,PlanetMap): #update karbonite map
+	for x in range(PlanetMap.width):
+		for y in range(PlanetMap.height):
+			ml = bc.MapLocation(PlanetMap.planet, x, y)
+			if can_sense_location(ml):
+				kmap.set(ml,gc.karbonite_at)
 if gc.planet() == bc.Planet.Earth:
 	gc.queue_research(bc.UnitType.Worker)
 	gc.queue_research(bc.UnitType.Worker)
