@@ -49,7 +49,17 @@ while True:
     # frequent try/catches are a good idea
     try:
         # walk through our units:
+        d = random.choice(directions)
+        #numWorkers = 0
         for unit in gc.my_units():
+
+            #Can anyone figure this out?
+
+            #if unit.unit_type == bc.UnitType.Worker:
+                #if numWorkers < 10 and gc.can_replicate(unit.id,d):
+                    #gc.replicate(unit.id,d)
+                    #numWorkers += 1
+					#continue
 
             # first, factory logic
             if unit.unit_type == bc.UnitType.Factory:
@@ -96,9 +106,8 @@ while True:
                 gc.blueprint(unit.id, bc.UnitType.Factory, d)
             elif gc.karbonite() > bc.UnitType.Rocket.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                 #or, try to build a rocket ZOE 1/19
-                # TODO: figure out what blueprint IDs are
 
-                gc.blueprint(unit.id, bc.UnitType.Rocket, d) # idk which direction we want
+                gc.blueprint(unit.id, bc.UnitType.Rocket, d)
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
                 for adjacent in adjacentUnits:#build
