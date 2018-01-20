@@ -84,14 +84,28 @@ while True:
             # pick a random direction:
             d = random.choice(directions)
 
+            #this might be a really bad strategy
+            for d in directions:
+                if gc.can_replicate(unit.id,d):
+                    gc.replicate(unit.id,d)
+                    replicated=True
+                    break
+
             # or, try to build a factory:
             if gc.karbonite() > bc.UnitType.Factory.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
                 gc.blueprint(unit.id, bc.UnitType.Factory, d)
             elif gc.karbonite() > bc.UnitType.Rocket.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                 #or, try to build a rocket ZOE 1/19
+                # TODO: figure out what blueprint IDs are
+
                 gc.blueprint(unit.id, bc.UnitType.Rocket, d) # idk which direction we want
-                if gc.can_build(unit.id, blueprint.id):
-                    gc.build(unit.id, blueprint.id)
+
+                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
+                for adjacent in adjacentUnits:#build
+                    if gc.can_build(unit.id,adjacent.id):
+                        gc.build(unit.id,adjacent.id)
+                        continue
+
             # and if that fails, try to move
             elif gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
                 gc.move_robot(unit.id, d)
