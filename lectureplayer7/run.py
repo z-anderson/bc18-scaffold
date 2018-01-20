@@ -1,3 +1,13 @@
+'''
+TODO: good path finder (that they gave us) and map they gave us
+read thru lecture player 7
+rockets
+attack (rangers etc.)
+'''
+
+
+
+
 import battlecode as bc
 import random
 import sys
@@ -25,7 +35,7 @@ def locToStr(loc):
 def onEarth(loc):
 	if (loc.x<0) or (loc.y<0) or (loc.x>=earthMap.width) or (loc.y>=earthMap.height): return False
 	return True
-	
+
 class mmap():
 	def __init__(self,width,height):
 		self.width=width
@@ -79,13 +89,13 @@ if gc.planet() == bc.Planet.Earth:
 	enemyStart = invert(oneLoc);
 	print('worker starts at '+locToStr(oneLoc))
 	print('enemy worker presumably at '+locToStr(enemyStart))
-	
+
 	#test out addDisk function
 	tmap = mmap(earthMap.width,earthMap.height)
 	tmap.addDisk(bc.MapLocation(bc.Planet.Earth,1,5),30,1)
 	tmap.addDisk(bc.MapLocation(bc.Planet.Earth,3,10),30,1)
 	tmap.printout()
-	
+
 	#store the map locally
 	storageStart=time.time()
 	passableMap = mmap(earthMap.width,earthMap.height);
@@ -111,7 +121,7 @@ if gc.planet() == bc.Planet.Earth:
 		locData = passableMap.get(accessLocation)
 	accessEnd=time.time()
 	print('accessing (x10,000) the local map took '+str(accessEnd-accessStart)+'s')
-	
+
 	#generate an ordered list of karbonite locations, sorted by distance to start
 	tOrderStart=time.time()
 	kLocs = []
@@ -130,8 +140,8 @@ if gc.planet() == bc.Planet.Earth:
 					if kMap.get(newPlace)>0:
 						kLocs.append(loc)
 		currentLocs=nextLocs
-	print('generating kLocs took '+str(time.time()-tOrderStart)+'s')	
-	
+	print('generating kLocs took '+str(time.time()-tOrderStart)+'s')
+
 def rotate(dir,amount):
 	ind = directions.index(dir)
 	return directions[(ind+amount)%8]
@@ -140,7 +150,7 @@ def goto(unit,dest):
 	d = unit.location.map_location().direction_to(dest)
 	if gc.can_move(unit.id, d):
 		gc.move_robot(unit.id,d)
-		
+
 def fuzzygoto(unit,dest):
 	if unit.location.map_location()==dest:return
 	toward = unit.location.map_location().direction_to(dest)
@@ -155,7 +165,7 @@ def fuzzygoto(unit,dest):
 def checkK(loc):
 	if not onEarth(loc): return 0
 	return gc.karbonite_at(loc)
-			
+
 def bestKarboniteDirection(loc):
 	mostK = 0
 	bestDir = None
@@ -184,7 +194,7 @@ while True:
 					dmap.addDisk(unit.location.map_location(),50,1)
 		if gc.round()==45:
 			dmap.printout()
-		
+
 		#count things: unfinished buildings, workers
 		numWorkers = 0
 		blueprintLocation = None
@@ -197,7 +207,7 @@ while True:
 					blueprintWaiting = True
 			if unit.unit_type== bc.UnitType.Worker:
 				numWorkers+=1
-		
+
 		for unit in gc.my_units():
 			if unit.unit_type == bc.UnitType.Worker:
 				d = random.choice(directions)
@@ -241,7 +251,7 @@ while True:
 								kLocs.pop(0)
 							else:
 								fuzzygoto(unit,dest)
-			
+
 			if unit.unit_type == bc.UnitType.Factory:
 				garrison = unit.structure_garrison()
 				if len(garrison) > 0:#ungarrison
@@ -252,7 +262,7 @@ while True:
 				elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Mages
 					gc.produce_robot(unit.id, bc.UnitType.Ranger)
 					continue
-			
+
 			if unit.unit_type == bc.UnitType.Ranger:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
 					attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
@@ -266,11 +276,11 @@ while True:
 						else:
 							destination=enemyStart
 						fuzzygoto(unit,destination)
-			
+
 			# attack
 			# if other.team != my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, other.id):
 				# gc.attack(unit.id, other.id)
-			
+
 			# movement
 			# elif gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
 				# gc.move_robot(unit.id, d)
