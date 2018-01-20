@@ -29,29 +29,18 @@ gc.queue_research(bc.UnitType.Knight)
 
 my_team = gc.team()
 
-def build_rocket(worker_id, direction):
-    '''
-    worker_id = unit.id (?)
-    builds a Rocket
-    not sure what to do about direction
-    before using, check if can_build and if can_blueprint
-    keep building it by hte worker until structure_is_built (4 rounds)
-    '''
-
-    gc.blueprint(self, unit.id, rocket, random.choice(directions)) # idk which direction we want
-    gc.build(self, unit.id, blueprint.id) # what is blueprint_id?\
-
+'''
 def launch_rocket(rocket_id, destination):
     if gc.can_launch_rocket(self, rocket_id, destination) == True:
         #destination: read in Jordan's map, maybe loop through, find good places to land,land there
         #load rocket
 
         for rob in robots:
-            if can_load(self, structure_id, robot_id):
-                load(self, structure_id, robot_id))
+                if can_load(self, structure_id, robot_id):
+                    load(self, structure_id, robot_id))
 
                 gc.launch_rocket(self, rocket_id, location) #same fo rlocation :(
-
+'''
 
 while True:
     # We only support Python 3, which means brackets around print()
@@ -98,9 +87,17 @@ while True:
             # or, try to build a factory:
             if gc.karbonite() > bc.UnitType.Factory.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
                 gc.blueprint(unit.id, bc.UnitType.Factory, d)
+            elif gc.karbonite() > bc.UnitType.Rocket.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
+                #or, try to build a rocket ZOE 1/19
+                gc.blueprint(unit.id, bc.UnitType.Rocket, d) # idk which direction we want
+                if gc.can_build(unit.id, blueprint.id):
+                    gc.build(unit.id, blueprint.id)
             # and if that fails, try to move
             elif gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
                 gc.move_robot(unit.id, d)
+
+            #launch a rocket ZOE 1/19
+
 
     except Exception as e:
         print('Error:', e)
