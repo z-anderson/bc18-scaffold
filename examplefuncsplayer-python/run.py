@@ -50,16 +50,17 @@ while True:
     try:
         # walk through our units:
         d = random.choice(directions)
-        #numWorkers = 0
+        numWorkers = 0
         for unit in gc.my_units():
 
-            #Can anyone figure this out?
+            # worker replication
 
-            #if unit.unit_type == bc.UnitType.Worker:
-                #if numWorkers < 10 and gc.can_replicate(unit.id,d):
-                    #gc.replicate(unit.id,d)
-                    #numWorkers += 1
-					#continue
+            if unit.unit_type == bc.UnitType.Worker:
+                if numWorkers < 10 and gc.can_replicate(unit.id,d):
+                    gc.replicate(unit.id,d)
+                    numWorkers += 1
+                    continue
+
 
             # first, factory logic
             if unit.unit_type == bc.UnitType.Factory:
@@ -91,35 +92,25 @@ while True:
                         continue
 
             # okay, there weren't any dudes around
-            # pick a random direction:
-            d = random.choice(directions)
-
-            #this might be a really bad strategy
-            for d in directions:
-                if gc.can_replicate(unit.id,d):
-                    gc.replicate(unit.id,d)
-                    replicated=True
-                    break
 
             # or, try to build a factory:
             if gc.karbonite() > bc.UnitType.Factory.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
                 gc.blueprint(unit.id, bc.UnitType.Factory, d)
             elif gc.karbonite() > bc.UnitType.Rocket.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                 #or, try to build a rocket ZOE 1/19
-
                 gc.blueprint(unit.id, bc.UnitType.Rocket, d)
-
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
                 for adjacent in adjacentUnits:#build
                     if gc.can_build(unit.id,adjacent.id):
                         gc.build(unit.id,adjacent.id)
                         continue
-
             # and if that fails, try to move
             elif gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
                 gc.move_robot(unit.id, d)
 
-            #launch a rocket ZOE 1/19
+            #TODO: ATTACK
+
+            # TODO: launch rocket
 
 
     except Exception as e:
