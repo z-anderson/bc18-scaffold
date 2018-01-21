@@ -201,7 +201,7 @@ while True:
 		for unit in gc.my_units():
 			if unit.unit_type == bc.UnitType.Worker:
 				d = random.choice(directions)
-				if numWorkers<10:
+				if numWorkers<10: # up from 10
 					replicated=False
 					for d in directions:
 						if gc.can_replicate(unit.id,d):
@@ -221,7 +221,7 @@ while True:
 					if gc.can_build(unit.id,adjacent.id):
 						gc.build(unit.id,adjacent.id)
 						continue
-
+				'''
 				#build rocket
 				if gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
 					if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
@@ -233,7 +233,7 @@ while True:
 						if gc.can_build(unit.id,adjacent.id):
 							gc.build(unit.id,adjacent.id)
 							continue
-
+				'''
 				#head toward blueprint location
 				if gc.is_move_ready(unit.id):
 					if blueprintWaiting:
@@ -295,7 +295,11 @@ while True:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
 					attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
 					if len(attackableEnemies)>0: #attack, then move? SHOULD WE MOVE???
+<<<<<<< Updated upstream
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
+=======
+						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): #(added check can attack)
+>>>>>>> Stashed changes
 							gc.attack(unit.id, attackableEnemies[0].id)
 					elif gc.is_move_ready(unit.id): #move, then attack
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
