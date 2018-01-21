@@ -265,19 +265,37 @@ while True:
 					if gc.can_unload(unit.id, d):
 						gc.unload(unit.id, d)
 						continue
-				elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Mages
-					gc.produce_robot(unit.id, bc.UnitType.Ranger)
-					continue
 
+				a=random.randint(0,2)
+				if a==1:
+					elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+						gc.produce_robot(unit.id, bc.UnitType.Ranger)
+						continue
+				elif gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Ranger
+						gc.produce_robot(unit.id, bc.UnitType.Mage)
+						continue
+
+			if unit.unit_type == bc.UnitType.Mage:
+				if not unit.location.is_in_garrison():#can't move from inside a factory
+					bestAmt, bestLoc = fmap.findBest(unit.location.map_location(),unit.attack_range())
+					if bestAmt>0:#found something to shoot
+						if gc.is_attack_ready(unit.id):
+							if gc.has_unit_at_location(bestLoc):
+								targetUnit = gc.sense_unit_at_location(bestLoc)
+								gc.attack(unit.id, targetUnit.id)
+					if gc.is_move_ready(unit.id):
+						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
+						if len(nearbyEnemies)>0:
+							destination=nearbyEnemies[0].location.map_location()
+						else:
+							destination=enemyStart
+						fuzzygoto(unit,destination)
+			
 			if unit.unit_type == bc.UnitType.Ranger:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
 					attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
 					if len(attackableEnemies)>0: #attack, then move? SHOULD WE MOVE???
-<<<<<<< HEAD
-						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): #(added check can attack)
-=======
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
->>>>>>> f4c6672dd95437f82919b2630fcffb80235fed9f
 							gc.attack(unit.id, attackableEnemies[0].id)
 					elif gc.is_move_ready(unit.id): #move, then attack
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
