@@ -275,13 +275,6 @@ while True:
 					if len(attackableEnemies)>0: #attack, then move? SHOULD WE MOVE???
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): #(added check can attack)
 							gc.attack(unit.id, attackableEnemies[0].id)
-							if gc.is_move_ready(unit.id):
-								nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
-								if len(nearbyEnemies)>0:
-									destination=nearbyEnemies[0].location.map_location()
-								else:
-									destination=enemyStart
-								fuzzygoto(unit,destination)
 					elif gc.is_move_ready(unit.id): #move, then attack
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
 						if len(nearbyEnemies)>0:
