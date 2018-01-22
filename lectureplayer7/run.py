@@ -291,7 +291,9 @@ while True:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
 					bestAmt, bestLoc = fmap.findBest(unit.location.map_location(),unit.attack_range())
 					if bestAmt>0:#found something to shoot
-						if gc.is_attack_ready(unit.id):
+						attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
+						if len(attackableEnemies)>0:
+						if gc.is_attack_ready(unit.id) and can_attack(unit.id, attackableEnemies[0].id):
 							if gc.has_unit_at_location(bestLoc):
 								targetUnit = gc.sense_unit_at_location(bestLoc)
 								gc.attack(unit.id, targetUnit.id)
@@ -302,7 +304,7 @@ while True:
 						else:
 							destination=enemyStart
 						fuzzygoto(unit,destination)
-			
+
 			if unit.unit_type == bc.UnitType.Ranger:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
 					attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
