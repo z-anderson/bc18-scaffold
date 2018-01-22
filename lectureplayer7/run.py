@@ -70,7 +70,11 @@ class mmap():
 if gc.planet() == bc.Planet.Earth:
 	gc.queue_research(bc.UnitType.Worker)
 	gc.queue_research(bc.UnitType.Ranger)
+	gc.queue_research(bc.UnitType.Mage)
 	gc.queue_research(bc.UnitType.Ranger)
+	gc.queue_research(bc.UnitType.Ranger)
+	gc.queue_research(bc.UnitType.Mage)
+
 	oneLoc = gc.my_units()[0].location.map_location()
 	loadStart = time.time()
 	earthMap = gc.starting_map(bc.Planet.Earth)
