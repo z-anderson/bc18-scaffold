@@ -367,7 +367,6 @@ while True:
 					dmap.addDisk(unit.location.map_location(),50,1)
 		if gc.round()==45:
 			dmap.printout()
-	try:
 		umap = mmap(w,h)
 		fmap = mmap(w,h)
 		for unit in gc.units():
@@ -476,16 +475,16 @@ while True:
 					if bestAmt>0:#found something to shoot
 						attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
 						if len(attackableEnemies)>0:
-							if gc.is_attack_ready(unit.id) and can_attack(unit.id, attackableEnemies[0].id):
+							if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
 								if gc.has_unit_at_location(bestLoc):
 									targetUnit = gc.sense_unit_at_location(bestLoc)
 									gc.attack(unit.id, targetUnit.id)
 						if gc.is_move_ready(unit.id): #attacked, now move
 							nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
-								if len(nearbyEnemies)>0:
-									destination=nearbyEnemies[0].location.map_location()
-								else:
-									destination=enemyStart
+							if len(nearbyEnemies)>0:
+								destination=nearbyEnemies[0].location.map_location()
+							else:
+								destination=enemyStart
 							fuzzygoto(unit,destination)
 					elif gc.is_move_ready(unit.id):
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
@@ -495,9 +494,9 @@ while True:
 							destination=enemyStart
 						fuzzygoto(unit,destination)
 						if bestAmt>0:#found something to shoot. #moved, now attack
-						attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
+							attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
 						if len(attackableEnemies)>0:
-							if gc.is_attack_ready(unit.id) and can_attack(unit.id, attackableEnemies[0].id):
+							if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
 								if gc.has_unit_at_location(bestLoc):
 									targetUnit = gc.sense_unit_at_location(bestLoc)
 									gc.attack(unit.id, targetUnit.id)
@@ -509,7 +508,7 @@ while True:
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
 							gc.attack(unit.id, attackableEnemies[0].id)
 						if gc.is_move_ready(unit.id): #attacked, now move
-						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
+							nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
 							if len(nearbyEnemies)>0:
 								destination=nearbyEnemies[0].location.map_location()
 							else:
