@@ -5,6 +5,7 @@ import traceback
 import os
 import time
 
+
 gc = bc.GameController()
 directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East, bc.Direction.Southeast, bc.Direction.South, bc.Direction.Southwest, bc.Direction.West, bc.Direction.Northwest]
 allDirections = list(bc.Direction)#includes center, and is weirdly ordered
@@ -13,6 +14,184 @@ random.seed(6137)
 my_team = gc.team()
 if my_team==bc.Team.Red:enemy_team = bc.Team.Blue
 else: enemy_team = bc.Team.Red
+
+
+
+class vector:
+    def __init__(self, x, y=None):
+        if isinstance(x, int):
+            self.x = x
+            self.y = y
+        else:
+            self.x = x[0]
+            self.y = x[1]
+
+    def __add__(self, v2):
+        return vector(self.x + v2.x, self.y + v2.y)
+
+    def __sub__(self, v2):
+        return vector(self.x - v2.x, self.y - v2.y)
+
+    def __mul__(self, v2):
+        if isinstance(v2, int) == 1:
+            return vector(self.x * v2, self.y * v2)
+        else:
+            return vector(self.x * v2.x, self.y * v2.y)
+
+    def dist2(self, v2):
+        return (v2.x - self.x) ** 2 + (v2.y - self.y) ** 2
+
+    def dirTo(self, v2):
+        closestDist = 100000000
+        for i in range(len(direction.getVs())):
+            testDir = direction(i)
+            testLoc = self + testDir
+            testDist = testLoc.dist2(v2)
+            if testDist < closestDist:
+                closestDist = testDist
+                closestDir = testDir
+            return closestDir
+
+    def of(self, arr):
+        return arr[self.x][self.y]
+
+    def set(self, arr, val):
+        arr[self.x][self.y] = val
+
+    def __str__(self):
+        return 'vector(' + str(self.x) + ',' + str(self.y) + ')'
+
+    def __eq__(self, v2):
+        return (self.x == v2.x) & (self.y == v2.y)
+
+    def cross(self, v2):
+        return -self.y * v2.x + self.x * v2.y
+
+#also for pathfinding
+class direction(vector):
+    vs = (vector(0, -1), vector(1,-1), vector(1, 0), vector(1,1), vector(0, 1), vector(-1,1), vector(-1, 0))
+
+    def __init__(self, d):
+        if isinstance(d, int):
+            self.index = d
+        else:
+            self.index = direction.getVs().index(d)
+        self.update()
+
+    def update(self):
+        self.v = direction.getVs()[self.index]
+        self.x = self.v.x
+        self.y = self.v.y
+
+    def rotateRight(self):
+        self.rotateAmount(1)
+
+    def rotateLeft(self):
+        self.rotateAmount(-1)
+
+    def rotateAmount(self, n):
+        self.index = (self.index + n) % len(direction.getVs())
+        self.update()
+
+    @classmethod
+    def getVs(cls):
+        return cls.vs
+
+    @classmethod
+    def getDs(cls):
+        return [direction(i) for i in range(len(direction.getVs()))]
+
+
+#tile in map for pathfinding
+class tile:
+    def __init__(self, loc, dist):
+        self.loc = loc
+        self.dist = dist
+        self.dirs = [0, 0, 0, 0, 0, 0, 0, 0]
+        self.width = 0
+
+    def getDirs(self):
+        dirs = []
+        for i in range(len(self.dirs)):
+            if self.dirs[i] == 1: dirs.append(direction(i))
+        return dirs
+
+    def addDir(self, dir, dist):
+        if dist < self.dist: self.dist = dist
+        self.dirs[dir.index] = 1
+
+    def __str__(self):
+        return 'tile(dist=' + str(self.dist) + ',dirs=' + str(self.dirs) + ',width=' + str(self.width)
+
+#for pathfinding
+class pathing:
+    def __init__(self, map, start, end):
+        self.map = map
+        self.md = [[0] * len(self.map[0]) for i in range(len(self.map))]
+        for i in range(len(self.map)):
+            for j in range(len(self.map[0])):
+                self.md[i][j] = tile(vector(i, j), 10000)
+        self.start = vector(start)
+        self.start.of(self.md).dist = 0
+        self.end = vector(end)
+        self.cpts = []
+        self.cpts.append(self.start)
+        self.dist = 0
+        self.state = 'spread'
+        self.path = []
+
+    def isOpen(self, loc, dist):
+        onMap = (loc.x >= 0) & (loc.x < len(self.map)) & (loc.y >= 0) & (loc.y < len(self.map[0]))
+        if not onMap: return False
+        traversable = loc.of(self.map) != 0
+        acceptablePathLength = dist <= loc.of(self.md).dist
+        return traversable & acceptablePathLength
+
+    def nextStep(self):
+        if self.state == 'spread':
+            nextPoints = []
+            for p in self.cpts:
+                for d in direction.getDs():
+                    ahead = p + d
+                    if self.isOpen(ahead, self.dist):
+                        ahead.of(self.md).addDir(d, self.dist)
+                        if not ahead in nextPoints: nextPoints.append(ahead)
+            if len(nextPoints) == 0:
+                self.state = 'return'
+                self.cpts = [self.end]
+            else:
+                self.cpts = nextPoints
+            self.dist += 1
+        elif self.state == 'return':
+            nextPoints = []
+            for p in self.cpts:
+                for d in p.of(self.md).getDirs():
+                    d.rotateAmount(4)  # flip backwards
+                    behind = p + d
+                    behind.of(self.md).width = len(self.cpts)
+                    if not behind in nextPoints: nextPoints.append(behind)
+            self.path.extend(self.cpts)
+            self.cpts = nextPoints
+            if len(nextPoints) == 0: self.state = 'arrived'
+
+# input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
+def next_move(map,start_loc,end_loc):
+    dirdict = {(1, 0): 'East', (1, 1): 'NorthEast', (0, 1): 'North', (-1, 1): 'Northwest',\
+               (-1, 0): 'East',(-1, -1): 'Southwest', (0, -1): 'South', (1, -1): 'Southeast'}
+
+    mypath = pathing(map,start_loc,end_loc)
+    while True:
+        if mypath.state == 'return':
+            break
+        mypath.nextStep()
+    mypath.nextStep()
+    # since there are many options for going back, I default to the first... this can change
+    mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
+    return dirdict.get(mydir)
+
+
+
+
 
 def invert(loc):#assumes Earth
 	newx = earthMap.width-loc.x

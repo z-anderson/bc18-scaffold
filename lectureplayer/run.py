@@ -46,6 +46,7 @@ def update_kmap(kmap,PlanetMap): #update karbonite map
 			ml = bc.MapLocation(PlanetMap.planet, x, y)
 			if can_sense_location(ml):
 				kmap.set(ml,gc.karbonite_at)
+
 if gc.planet() == bc.Planet.Earth:
 	gc.queue_research(bc.UnitType.Worker)
 	gc.queue_research(bc.UnitType.Worker)

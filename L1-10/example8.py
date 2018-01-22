@@ -23,7 +23,7 @@ framesPerUpdate=1
 step = False
 while going:
 	time+=1
-	for event in pygame.event.get():
+    for event in pygame.event.get():
 		if event.type==pygame.QUIT:
 			going=False
 		if event.type==pygame.KEYDOWN:
