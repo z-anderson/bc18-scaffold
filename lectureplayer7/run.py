@@ -293,17 +293,31 @@ while True:
 					if bestAmt>0:#found something to shoot
 						attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
 						if len(attackableEnemies)>0:
-						if gc.is_attack_ready(unit.id) and can_attack(unit.id, attackableEnemies[0].id):
-							if gc.has_unit_at_location(bestLoc):
-								targetUnit = gc.sense_unit_at_location(bestLoc)
-								gc.attack(unit.id, targetUnit.id)
-					if gc.is_move_ready(unit.id):
+							if gc.is_attack_ready(unit.id) and can_attack(unit.id, attackableEnemies[0].id):
+								if gc.has_unit_at_location(bestLoc):
+									targetUnit = gc.sense_unit_at_location(bestLoc)
+									gc.attack(unit.id, targetUnit.id)
+						if gc.is_move_ready(unit.id): #attacked, now move
+							nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
+								if len(nearbyEnemies)>0:
+									destination=nearbyEnemies[0].location.map_location()
+								else:
+									destination=enemyStart
+							fuzzygoto(unit,destination)
+					elif gc.is_move_ready(unit.id):
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
 						if len(nearbyEnemies)>0:
 							destination=nearbyEnemies[0].location.map_location()
 						else:
 							destination=enemyStart
 						fuzzygoto(unit,destination)
+						if bestAmt>0:#found something to shoot. #moved, now attack
+						attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
+						if len(attackableEnemies)>0:
+							if gc.is_attack_ready(unit.id) and can_attack(unit.id, attackableEnemies[0].id):
+								if gc.has_unit_at_location(bestLoc):
+									targetUnit = gc.sense_unit_at_location(bestLoc)
+									gc.attack(unit.id, targetUnit.id)
 
 			if unit.unit_type == bc.UnitType.Ranger:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
@@ -311,6 +325,13 @@ while True:
 					if len(attackableEnemies)>0: #attack, then move? SHOULD WE MOVE???
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
 							gc.attack(unit.id, attackableEnemies[0].id)
+						if gc.is_move_ready(unit.id): #attacked, now move
+						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
+							if len(nearbyEnemies)>0:
+								destination=nearbyEnemies[0].location.map_location()
+							else:
+								destination=enemyStart
+							fuzzygoto(unit,destination)
 					elif gc.is_move_ready(unit.id): #move, then attack
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
 						if len(nearbyEnemies)>0:
