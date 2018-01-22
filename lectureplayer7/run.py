@@ -69,7 +69,8 @@ class vector:
 
 #also for pathfinding
 class direction(vector):
-    vs = (vector(0, -1), vector(1,-1), vector(1, 0), vector(1,1), vector(0, 1), vector(-1,1), vector(-1, 0))
+    vs = (vector(0, -1), vector(1,-1), vector(1, 0), vector(1,1), \
+          vector(0, 1), vector(-1,1), vector(-1, 0), vector(-1,-1))
 
     def __init__(self, d):
         if isinstance(d, int):
@@ -139,6 +140,7 @@ class pathing:
         self.dist = 0
         self.state = 'spread'
         self.path = []
+        self.return_dist = 0
 
     def isOpen(self, loc, dist):
         onMap = (loc.x >= 0) & (loc.x < len(self.map)) & (loc.y >= 0) & (loc.y < len(self.map[0]))
@@ -172,7 +174,10 @@ class pathing:
                     if not behind in nextPoints: nextPoints.append(behind)
             self.path.extend(self.cpts)
             self.cpts = nextPoints
-            if len(nextPoints) == 0: self.state = 'arrived'
+            if len(nextPoints) == 0:
+                self.state = 'arrived'
+                self.return_dist -= 1 # to account for extra step
+            self.return_dist += 1
 
 # input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
 def next_move(map,start_loc,end_loc):
@@ -189,8 +194,15 @@ def next_move(map,start_loc,end_loc):
     mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
     return dirdict.get(mydir)
 
-# create function that counts distance required to travel:
 
+def walking_dist(map,start_loc,end_loc):
+    mypath = pathing(map,start_loc,end_loc)
+    while mypath.state != 'arrived':
+        mypath.nextStep()
+    return mypath.return_dist
+
+
+# create function to convert map to pathfinding map
 
 
 def invert(loc):#assumes Earth
