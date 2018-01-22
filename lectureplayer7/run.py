@@ -184,6 +184,18 @@ while True:
 					dmap.addDisk(unit.location.map_location(),50,1)
 		if gc.round()==45:
 			dmap.printout()
+	try:
+		umap = mmap(w,h)
+		fmap = mmap(w,h)
+		for unit in gc.units():
+			if not unit.location.is_in_garrison():
+				if unit.team==my_team: amt=-1
+				else: amt=1
+				fmap.addDisk(unit.location.map_location(),2,amt)
+				umap.set(unit.location.map_location(),1)
+		fmap.multiply(umap)
+		if gc.round()==45:
+			fmap.printout()
 
 		#count things: unfinished buildings, workers
 		numWorkers = 0
@@ -268,7 +280,7 @@ while True:
 
 				a=random.randint(0,2)
 				if a==1:
-					elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+					if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
 						gc.produce_robot(unit.id, bc.UnitType.Ranger)
 						continue
 				elif gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Ranger
@@ -295,11 +307,7 @@ while True:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
 					attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
 					if len(attackableEnemies)>0: #attack, then move? SHOULD WE MOVE???
-<<<<<<< Updated upstream
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
-=======
-						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): #(added check can attack)
->>>>>>> Stashed changes
 							gc.attack(unit.id, attackableEnemies[0].id)
 					elif gc.is_move_ready(unit.id): #move, then attack
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
