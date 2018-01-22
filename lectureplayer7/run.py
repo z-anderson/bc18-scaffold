@@ -189,7 +189,7 @@ def next_move(map,start_loc,end_loc):
     mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
     return dirdict.get(mydir)
 
-
+# create function that counts distance required to travel:
 
 
 
@@ -472,7 +472,7 @@ while True:
 
 			if unit.unit_type == bc.UnitType.Mage:
 				if not unit.location.is_in_garrison():#can't move from inside a factory
-					bestAmt, bestLoc = fmap.findBest(unit.location.map_location(),unit.attack_range())
+					bestAmt, bestLoc = fmap.findBest(unit.location.map_location(),unit.attack_range()) # bestLoc undefined Line 500
 					if bestAmt>0:#found something to shoot
 						attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
 						if len(attackableEnemies)>0:
