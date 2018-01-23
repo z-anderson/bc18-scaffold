@@ -510,7 +510,7 @@ while True:
                             attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
                         if len(attackableEnemies)>0:
                             if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id):
-                                if bestLoc != None:
+                                if bestLoc:
                                     if gc.has_unit_at_location(bestLoc):
                                         targetUnit = gc.sense_unit_at_location(bestLoc)
                                         gc.attack(unit.id, targetUnit.id)
