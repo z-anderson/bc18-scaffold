@@ -258,6 +258,24 @@ class mmap():
                 bestLoc=loc
         return bestAmt, bestLoc
 
+def update_kmap(kmap,PlanetMap): #update karbonite map
+    for x in range(PlanetMap.width):
+        for y in range(PlanetMap.height):
+            ml = bc.MapLocation(PlanetMap.planet, x, y)
+            if gc.can_sense_location(ml):
+                kmap.set(ml,gc.karbonite_at)
+
+def update_pathmap_units(pathMap,Planet): # updates the pathfinding map with current units. use update before using next move!
+    for x in range(pathMap.width):
+        for y in range(pathMap.height):
+            mapLoc = (Planet,x,y)
+            if gc.can_sense_location(mapLoc):
+                if gc.sense_unit_at_location(mapLoc):
+                    pathMap.set(mapLoc, 1)
+                else:
+                    pathMap.set(mapLoc,0)
+
+
 if gc.planet() == bc.Planet.Earth:
     gc.queue_research(bc.UnitType.Worker)
     gc.queue_research(bc.UnitType.Ranger)
@@ -269,6 +287,15 @@ if gc.planet() == bc.Planet.Earth:
     oneLoc = gc.my_units()[0].location.map_location()
     loadStart = time.time()
     earthMap = gc.starting_map(bc.Planet.Earth)
+
+    pathMap = mmap(earthMap.width,earthMap.height)
+    # map for pathfinding/next_move
+    for x in range(earthMap.width):
+        for y in range(earthMap.height):
+            mapLoc = (bc.Planet.Earth,x,y)
+            if earthMap.is_passable_terrain_at(mapLoc):
+                pathMap.set(mapLoc,1)
+
     loadEnd = time.time()
     print('loading the map took '+str(loadEnd-loadStart)+'s')
     enemyStart = invert(oneLoc);
