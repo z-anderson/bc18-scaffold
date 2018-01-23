@@ -428,7 +428,7 @@ while True:
 
 
                 #build rocket
-                if gc.rounds() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
+                if gc.round() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
                     if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                         gc.blueprint(unit.id, bc.UnitType.Rocket, d)
                         continue
@@ -479,6 +479,7 @@ while True:
                         print("Unloaded Garrison\n")
                         continue
 
+                #TODO: make this not random and stuff
                 a=random.randint(0,2)
                 if a==1:
                     if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger

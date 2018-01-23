@@ -259,6 +259,7 @@ while True:
 					if len(attackableEnemies)>0:
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): # CHANGED
 							gc.attack(unit.id, attackableEnemies[0].id)
+							print("ranger attacked")
 					elif gc.is_move_ready(unit.id):
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
 						if len(nearbyEnemies)>0:
