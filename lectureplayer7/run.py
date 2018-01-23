@@ -426,7 +426,7 @@ while True:
                         print("Made blueprint\n")
                         continue
 
-<<<<<<< HEAD
+
                 #build rocket
                 if gc.rounds() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
                     if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
@@ -434,9 +434,9 @@ while True:
                         continue
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
-=======
+
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
->>>>>>> a5e539855b0070c45bef399188b4e20a23bdabb7
+
                 for adjacent in adjacentUnits:#build
                     if gc.can_build(unit.id,adjacent.id):
                         gc.build(unit.id,adjacent.id)
