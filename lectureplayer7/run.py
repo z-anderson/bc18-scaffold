@@ -378,6 +378,7 @@ while True:
                 if unit.team!=my_team:
                     dmap.addDisk(unit.location.map_location(),50,1)
         if gc.round()==45:
+            print("Printing the danger zone map\n")
             dmap.printout()
         umap = mmap(w,h)
         fmap = mmap(w,h)
@@ -389,6 +390,7 @@ while True:
                 umap.set(unit.location.map_location(),1)
         fmap.multiply(umap)
         if gc.round()==45:
+            print("Printing the fmap\n")
             fmap.printout()
 
         #count things: unfinished buildings, workers
