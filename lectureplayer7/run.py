@@ -5,6 +5,7 @@ import traceback
 import os
 import time
 
+#notes for jordan --> do workers stuff, change fuzzy gotos, rockets!
 
 gc = bc.GameController()
 directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East, bc.Direction.Southeast, bc.Direction.South, bc.Direction.Southwest, bc.Direction.West, bc.Direction.Northwest]
@@ -15,6 +16,47 @@ my_team = gc.team()
 if my_team==bc.Team.Red:enemy_team = bc.Team.Blue
 else: enemy_team = bc.Team.Red
 
+
+class mmap():
+    def __init__(self,width,height):
+        self.width=width
+        self.height=height
+        self.arr=[[0]*self.height for i in range(self.width)];
+    def onMap(self,loc):
+        if (loc.x<0) or (loc.y<0) or (loc.x>=self.width) or (loc.y>=self.height): return False
+        return True
+    def get(self,mapLocation):
+        if not self.onMap(mapLocation):return -1
+        return self.arr[mapLocation.x][mapLocation.y]
+    def set(self,mapLocation,val):
+        self.arr[mapLocation.x][mapLocation.y]=val
+    def printout(self):
+        print('printing map:')
+        for y in range(self.height):
+            buildstr=''
+            for x in range(self.width):
+                buildstr+=format(self.arr[x][self.height-1-y],'2d')
+            print(buildstr)
+    def addDisk(self,mapLocation,r2,val):
+        locs = gc.all_locations_within(mapLocation,r2)
+        for loc in locs:
+            if self.onMap(loc):
+                self.set(loc,self.get(loc)+val)
+    def multiply(self,mmap2):
+        for x in range(self.width):
+            for y in range(self.height):
+                ml = bc.MapLocation(bc.Planet.Earth,x,y);
+                self.set(ml,self.get(ml)*mmap2.get(ml))
+    def findBest(self,mapLocation,r2):
+        locs = gc.all_locations_within(mapLocation,r2)
+        bestAmt = 0
+        bestLoc = None
+        for loc in locs:
+            amt = self.get(loc)
+            if amt>bestAmt:
+                bestAmt=amt
+                bestLoc=loc
+        return bestAmt, bestLoc
 
 
 class vector:
@@ -145,7 +187,7 @@ class pathing:
     def isOpen(self, loc, dist):
         onMap = (loc.x >= 0) & (loc.x < len(self.map)) & (loc.y >= 0) & (loc.y < len(self.map[0]))
         if not onMap: return False
-        traversable = loc.of(self.map) != 0
+        traversable = loc.of(self.map) == 0
         acceptablePathLength = dist <= loc.of(self.md).dist
         return traversable & acceptablePathLength
 
@@ -202,7 +244,30 @@ def walking_dist(map,start_loc,end_loc):
     return mypath.return_dist
 
 
-# create function to convert map to pathfinding map
+class pathMap:
+    def __init__(self, Planet): #bc.Planet....
+        pMap = gc.starting_map(Planet)
+        self.w = pMap.width
+        self.h = pMap.height
+        self.p = Planet
+        self.pathMap = mmap(self.w,self.h)
+        # map for pathfinding/next_move
+        for x in range(self.w):
+            for y in range(self.h):
+                mapLoc = (self.p, x, y)
+                if not earthMap.is_passable_terrain_at(mapLoc):
+                    self.pathMap.set(mapLoc, 2)  # 2 representing not passable terrain
+
+    def update_pathmap_units(self): # updates the pathfinding map with current units. use update before using next move!
+        for x in range(self.w):
+            for y in range(self.h):
+                mapLoc = (self.p,x,y)
+                if gc.can_sense_location(mapLoc) and self.pathMap.get(mapLoc) != 2:
+                    if gc.sense_unit_at_location(mapLoc):
+                        self.pathMap.set(mapLoc, 1)
+                    else:
+                        self.pathMap.set(mapLoc,0)
+
 
 
 def invert(loc):#assumes Earth
@@ -217,46 +282,15 @@ def onEarth(loc):
     if (loc.x<0) or (loc.y<0) or (loc.x>=earthMap.width) or (loc.y>=earthMap.height): return False
     return True
 
-class mmap():
-    def __init__(self,width,height):
-        self.width=width
-        self.height=height
-        self.arr=[[0]*self.height for i in range(self.width)];
-    def onMap(self,loc):
-        if (loc.x<0) or (loc.y<0) or (loc.x>=self.width) or (loc.y>=self.height): return False
-        return True
-    def get(self,mapLocation):
-        if not self.onMap(mapLocation):return -1
-        return self.arr[mapLocation.x][mapLocation.y]
-    def set(self,mapLocation,val):
-        self.arr[mapLocation.x][mapLocation.y]=val
-    def printout(self):
-        print('printing map:')
-        for y in range(self.height):
-            buildstr=''
-            for x in range(self.width):
-                buildstr+=format(self.arr[x][self.height-1-y],'2d')
-            print(buildstr)
-    def addDisk(self,mapLocation,r2,val):
-        locs = gc.all_locations_within(mapLocation,r2)
-        for loc in locs:
-            if self.onMap(loc):
-                self.set(loc,self.get(loc)+val)
-    def multiply(self,mmap2):
-        for x in range(self.width):
-            for y in range(self.height):
-                ml = bc.MapLocation(bc.Planet.Earth,x,y);
-                self.set(ml,self.get(ml)*mmap2.get(ml))
-    def findBest(self,mapLocation,r2):
-        locs = gc.all_locations_within(mapLocation,r2)
-        bestAmt = 0
-        bestLoc = None
-        for loc in locs:
-            amt = self.get(loc)
-            if amt>bestAmt:
-                bestAmt=amt
-                bestLoc=loc
-        return bestAmt, bestLoc
+
+class Kmap:
+    def __init__(self):
+        kMap = mmap(earthMap.width, earthMap.height);
+        for x in range(earthMap.width):
+            for y in range(earthMap.height):
+                ml = bc.MapLocation(bc.Planet.Earth, x, y);
+                passableMap.set(ml, earthMap.is_passable_terrain_at(ml))
+                kMap.set(ml, earthMap.initial_karbonite_at(ml))
 
 def update_kmap(kmap,PlanetMap): #update karbonite map
     for x in range(PlanetMap.width):
@@ -265,20 +299,16 @@ def update_kmap(kmap,PlanetMap): #update karbonite map
             if gc.can_sense_location(ml):
                 kmap.set(ml,gc.karbonite_at)
 
-def update_pathmap_units(pathMap,Planet): # updates the pathfinding map with current units. use update before using next move!
-    for x in range(pathMap.width):
-        for y in range(pathMap.height):
-            mapLoc = (Planet,x,y)
-            if gc.can_sense_location(mapLoc):
-                if gc.sense_unit_at_location(mapLoc):
-                    pathMap.set(mapLoc, 1)
-                else:
-                    pathMap.set(mapLoc,0)
+def closest_K:
+    pass
+
+
 
 
 if gc.planet() == bc.Planet.Earth:
     gc.queue_research(bc.UnitType.Worker)
     gc.queue_research(bc.UnitType.Ranger)
+    gc.queue_research(bc.UnitType.Rocket)
     gc.queue_research(bc.UnitType.Mage)
     gc.queue_research(bc.UnitType.Ranger)
     gc.queue_research(bc.UnitType.Ranger)
@@ -288,13 +318,9 @@ if gc.planet() == bc.Planet.Earth:
     loadStart = time.time()
     earthMap = gc.starting_map(bc.Planet.Earth)
 
-    pathMap = mmap(earthMap.width,earthMap.height)
-    # map for pathfinding/next_move
-    for x in range(earthMap.width):
-        for y in range(earthMap.height):
-            mapLoc = (bc.Planet.Earth,x,y)
-            if earthMap.is_passable_terrain_at(mapLoc):
-                pathMap.set(mapLoc,1)
+    path_map = pathMap(bc.Planet.Earth)
+    path_map.update_pathmap_units()
+
 
     loadEnd = time.time()
     print('loading the map took '+str(loadEnd-loadStart)+'s')
@@ -373,6 +399,7 @@ def fuzzygoto(unit,dest):
             if gc.can_move(unit.id, d):
                 gc.move_robot(unit.id,d)
                 break
+
 
 def checkK(loc):
     if not onEarth(loc): return 0
@@ -455,10 +482,9 @@ while True:
 
 
                 #build rocket
-                if gc.rounds() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
-                    if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
-                        gc.blueprint(unit.id, bc.UnitType.Rocket, d)
-                        continue
+                if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
+                    gc.blueprint(unit.id, bc.UnitType.Rocket, d)
+                    continue
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
 
