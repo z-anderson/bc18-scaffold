@@ -245,23 +245,23 @@ def walking_dist(map,start_loc,end_loc):
 
 
 class pathMap:
-    def __init__(self, Planet): #bc.Planet....
-        pMap = gc.starting_map(Planet)
+    def __init__(self): #bc.Planet.... (delete?)
+        pMap = gc.starting_map(bc.Planet.Earth)
         self.w = pMap.width
         self.h = pMap.height
-        self.p = Planet
+        self.p = bc.Planet.Earth
         self.pathMap = mmap(self.w,self.h)
         # map for pathfinding/next_move
         for x in range(self.w):
             for y in range(self.h):
-                mapLoc = (self.p, x, y)
+                mapLoc = bc.MapLocation(bc.Planet.Earth, x, y)
                 if not earthMap.is_passable_terrain_at(mapLoc):
                     self.pathMap.set(mapLoc, 2)  # 2 representing not passable terrain
 
     def update_pathmap_units(self): # updates the pathfinding map with current units. use update before using next move!
         for x in range(self.w):
             for y in range(self.h):
-                mapLoc = (self.p,x,y)
+                mapLoc = bc.MapLocation(bc.Planet.Earth,x,y)
                 if gc.can_sense_location(mapLoc) and self.pathMap.get(mapLoc) != 2:
                     if gc.sense_unit_at_location(mapLoc):
                         self.pathMap.set(mapLoc, 1)
@@ -299,7 +299,7 @@ def update_kmap(kmap,PlanetMap): #update karbonite map
             if gc.can_sense_location(ml):
                 kmap.set(ml,gc.karbonite_at)
 
-def closest_K:
+def closest_K():
     pass
 
 
@@ -318,7 +318,7 @@ if gc.planet() == bc.Planet.Earth:
     loadStart = time.time()
     earthMap = gc.starting_map(bc.Planet.Earth)
 
-    path_map = pathMap(bc.Planet.Earth)
+    path_map = pathMap() #bc.Planet.Earth
     path_map.update_pathmap_units()
 
 
@@ -481,19 +481,15 @@ while True:
                         continue
 
 
-                #build rocket
-<<<<<<< HEAD
+                #build rockets
+
                 if gc.round() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
                     if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                         gc.blueprint(unit.id, bc.UnitType.Rocket, d)
                         continue
-=======
-                if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
-                    gc.blueprint(unit.id, bc.UnitType.Rocket, d)
-                    continue
->>>>>>> abd77d63ddd379bb5042c8a1a0efb00e4ac818e8
 
-                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
+
+                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
 
@@ -539,7 +535,7 @@ while True:
                         print("Unloaded Garrison\n")
                         continue
 
-                #TODO: make this not random and stuff
+                #TODO: make this not random and stuff (Zoe)
                 a=random.randint(0,2)
                 if a==1:
                     if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
@@ -550,6 +546,11 @@ while True:
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print("Produced Mage\n")
                         continue
+            #LAUNCH ROCKET
+            '''
+            if unit.unit_type == bc.UnitType.Rocket:
+                if can_launch_rocket(unit.id, )
+            '''
 
             if unit.unit_type == bc.UnitType.Mage:
                 if not unit.location.is_in_garrison():#can't move from inside a factory
