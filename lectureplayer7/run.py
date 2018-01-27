@@ -245,29 +245,31 @@ def walking_dist(map,start_loc,end_loc):
 
 
 class pathMap:
-    def __init__(self): #bc.Planet.... (delete?)
-        pMap = gc.starting_map(bc.Planet.Earth)
-        self.w = pMap.width
-        self.h = pMap.height
-        self.p = bc.Planet.Earth
+    def __init__(self, planet): #bc.Planet.... (delete?)
+        self.p = planet
+        self.pMap = gc.starting_map(self.p)
+        self.w = self.pMap.width
+        self.h = self.pMap.height
         self.pathMap = mmap(self.w,self.h)
         # map for pathfinding/next_move
         for x in range(self.w):
             for y in range(self.h):
-                mapLoc = bc.MapLocation(bc.Planet.Earth, x, y)
+                mapLoc = bc.MapLocation(self.p, x, y)
                 if not earthMap.is_passable_terrain_at(mapLoc):
                     self.pathMap.set(mapLoc, 2)  # 2 representing not passable terrain
 
     def update_pathmap_units(self): # updates the pathfinding map with current units. use update before using next move!
         for x in range(self.w):
             for y in range(self.h):
-                mapLoc = bc.MapLocation(bc.Planet.Earth,x,y)
-                if gc.can_sense_location(mapLoc) and self.pathMap.get(mapLoc) != 2:
-                    if gc.sense_unit_at_location(mapLoc):
-                        self.pathMap.set(mapLoc, 1)
-                    else:
-                        self.pathMap.set(mapLoc,0)
-
+                maploc = bc.MapLocation(self.p,x,y)
+                if gc.can_sense_location(maploc):
+                    if self.pathMap.get(maploc) != 2:
+                        try:
+                            if gc.sense_unit_at_location(maploc):
+                                self.pathMap.set(maploc, 1)
+                                print('worked')
+                        except:
+                            self.pathMap.set(maploc,0)
 
 
 def invert(loc):#assumes Earth
@@ -284,23 +286,45 @@ def onEarth(loc):
 
 
 class Kmap:
-    def __init__(self):
-        kMap = mmap(earthMap.width, earthMap.height);
-        for x in range(earthMap.width):
-            for y in range(earthMap.height):
-                ml = bc.MapLocation(bc.Planet.Earth, x, y);
-                passableMap.set(ml, earthMap.is_passable_terrain_at(ml))
-                kMap.set(ml, earthMap.initial_karbonite_at(ml))
+    def __init__(self, planet):
+        self.p = planet
+        self.Kmap = mmap(self.p.width, self.p.height)
+        self.Pmap = gc.starting_map(self.p)
+        for x in range(self.Pmap.width):
+            for y in range(self.Pmap.height):
+                ml = bc.MapLocation(self.p, x, y)
+                self.Kmap.set(ml, self.Pmap.initial_karbonite_at(ml))
 
-def update_kmap(kmap,PlanetMap): #update karbonite map
-    for x in range(PlanetMap.width):
-        for y in range(PlanetMap.height):
-            ml = bc.MapLocation(PlanetMap.planet, x, y)
-            if gc.can_sense_location(ml):
-                kmap.set(ml,gc.karbonite_at)
+    def update_kmap(self): #update karbonite map
+        for x in range(self.Pmap.width):
+            for y in range(self.Pmap.height):
+                ml = bc.MapLocation(self.p, x, y)
+                if gc.can_sense_location(ml):
+                    self.Kmap.set(ml,gc.karbonite_at)
 
-def closest_K():
-    pass
+    def closest_K(self,unit):
+        distDict = {}
+        minDist = None
+        minML = unit.location.map_location()
+        for x in range(self.Pmap.width):
+            for y in range(self.Pmap.height):
+                ml = bc.MapLocation(self.p, x, y)
+                distDict[ml] = unit.location.map_location().distance_squared_to(ml)
+        for key, value in distDict.items():
+            if minDist == None:
+                minDist = value
+                minML = key
+            elif value > minDist:
+                minDist = value
+                minML = key
+
+        return minML
+
+
+
+
+
+
 
 
 
@@ -318,9 +342,10 @@ if gc.planet() == bc.Planet.Earth:
     loadStart = time.time()
     earthMap = gc.starting_map(bc.Planet.Earth)
 
-    path_map = pathMap() #bc.Planet.Earth
+    path_map = pathMap(bc.Planet.Earth)
+    print(path_map)
     path_map.update_pathmap_units()
-
+    k_map = Kmap(bc.Planet.Earth)
 
     loadEnd = time.time()
     print('loading the map took '+str(loadEnd-loadStart)+'s')
