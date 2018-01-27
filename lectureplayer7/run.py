@@ -582,7 +582,7 @@ while True:
                     if is_passable_terrain_at(loc):
                         landing_locs += loc
 
-                if can_launch_rocket(unit.id, unit.location.map_location(landing_locs[0])):
+                if can_launch_rocket(unit.id, unit.location.map_location(landing_locs[0])) and not has_asteroid(gc.round):
                     launch_rocket(unit.id, unit.location.map_location(landing_locs[0]))
 
                 continue
