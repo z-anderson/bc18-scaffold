@@ -5,6 +5,7 @@ import traceback
 import os
 import time
 
+#notes for jordan --> do workers stuff, change fuzzy gotos, rockets!
 
 gc = bc.GameController()
 directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East, bc.Direction.Southeast, bc.Direction.South, bc.Direction.Southwest, bc.Direction.West, bc.Direction.Northwest]
@@ -15,6 +16,47 @@ my_team = gc.team()
 if my_team==bc.Team.Red:enemy_team = bc.Team.Blue
 else: enemy_team = bc.Team.Red
 
+
+class mmap():
+    def __init__(self,width,height):
+        self.width=width
+        self.height=height
+        self.arr=[[0]*self.height for i in range(self.width)];
+    def onMap(self,loc):
+        if (loc.x<0) or (loc.y<0) or (loc.x>=self.width) or (loc.y>=self.height): return False
+        return True
+    def get(self,mapLocation):
+        if not self.onMap(mapLocation):return -1
+        return self.arr[mapLocation.x][mapLocation.y]
+    def set(self,mapLocation,val):
+        self.arr[mapLocation.x][mapLocation.y]=val
+    def printout(self):
+        print('printing map:')
+        for y in range(self.height):
+            buildstr=''
+            for x in range(self.width):
+                buildstr+=format(self.arr[x][self.height-1-y],'2d')
+            print(buildstr)
+    def addDisk(self,mapLocation,r2,val):
+        locs = gc.all_locations_within(mapLocation,r2)
+        for loc in locs:
+            if self.onMap(loc):
+                self.set(loc,self.get(loc)+val)
+    def multiply(self,mmap2):
+        for x in range(self.width):
+            for y in range(self.height):
+                ml = bc.MapLocation(bc.Planet.Earth,x,y);
+                self.set(ml,self.get(ml)*mmap2.get(ml))
+    def findBest(self,mapLocation,r2):
+        locs = gc.all_locations_within(mapLocation,r2)
+        bestAmt = 0
+        bestLoc = None
+        for loc in locs:
+            amt = self.get(loc)
+            if amt>bestAmt:
+                bestAmt=amt
+                bestLoc=loc
+        return bestAmt, bestLoc
 
 
 class vector:
@@ -126,11 +168,12 @@ class tile:
 
 #for pathfinding
 class pathing:
+
     def __init__(self, map, start, end):
         self.map = map
-        self.md = [[0] * len(self.map[0]) for i in range(len(self.map))]
-        for i in range(len(self.map)):
-            for j in range(len(self.map[0])):
+        self.md = [[0] * self.map.width for i in range(self.map.height)]
+        for i in range(self.map.width):
+            for j in range(self.map.height):
                 self.md[i][j] = tile(vector(i, j), 10000)
         self.start = vector(start)
         self.start.of(self.md).dist = 0
@@ -143,9 +186,9 @@ class pathing:
         self.return_dist = 0
 
     def isOpen(self, loc, dist):
-        onMap = (loc.x >= 0) & (loc.x < len(self.map)) & (loc.y >= 0) & (loc.y < len(self.map[0]))
+        onMap = (loc.x >= 0) & (loc.x < self.map.width) & (loc.y >= 0) & (loc.y < self.map.height)
         if not onMap: return False
-        traversable = loc.of(self.map) != 0
+        traversable = loc.of(self.map.arr) == 0
         acceptablePathLength = dist <= loc.of(self.md).dist
         return traversable & acceptablePathLength
 
@@ -179,30 +222,79 @@ class pathing:
                 self.return_dist -= 1 # to account for extra step
             self.return_dist += 1
 
-# input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
-def next_move(map,start_loc,end_loc):
-    dirdict = {(1, 0): 'East', (1, 1): 'NorthEast', (0, 1): 'North', (-1, 1): 'Northwest',\
-               (-1, 0): 'East',(-1, -1): 'Southwest', (0, -1): 'South', (1, -1): 'Southeast'}
+# # input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
+# def next_move(map,start_loc,end_loc):
+#     dirdict = {(1, 0): 'East', (1, 1): 'NorthEast', (0, 1): 'North', (-1, 1): 'Northwest',\
+#                (-1, 0): 'East',(-1, -1): 'Southwest', (0, -1): 'South', (1, -1): 'Southeast'}
+#
+#     mypath = pathing(map,start_loc,end_loc)
+#     while True:
+#         if mypath.state == 'return':
+#             break
+#         mypath.nextStep()
+#     mypath.nextStep()
+#     # since there are many options for going back, I default to the first... this can change
+#     mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
+#     return dirdict.get(mydir)
+#
+#
+# def walking_dist(map,start_loc,end_loc):
+#     mypath = pathing(map,start_loc,end_loc)
+#     while mypath.state != 'arrived':
+#         mypath.nextStep()
+#     return mypath.return_dist
 
-    mypath = pathing(map,start_loc,end_loc)
-    while True:
-        if mypath.state == 'return':
-            break
+
+class pathMap:
+    def __init__(self, planet): #bc.Planet.... (delete?)
+        self.p = planet
+        self.pMap = gc.starting_map(self.p)
+        self.w = self.pMap.width
+        self.h = self.pMap.height
+        self.pathMap = mmap(self.w,self.h)
+        # map for pathfinding/next_move
+        for x in range(self.w):
+            for y in range(self.h):
+                mapLoc = bc.MapLocation(self.p, x, y)
+                if not earthMap.is_passable_terrain_at(mapLoc):
+                    self.pathMap.set(mapLoc, 2)  # 2 representing not passable terrain
+
+    def update_pathmap_units(self): # updates the pathfinding map with current units. use update before using next move!
+        for x in range(self.w):
+            for y in range(self.h):
+                maploc = bc.MapLocation(self.p,x,y)
+                if gc.can_sense_location(maploc):
+                    if self.pathMap.get(maploc) != 2:
+                        try:
+                            if gc.sense_unit_at_location(maploc):
+                                self.pathMap.set(maploc, 1)
+                                print('worked')
+                        except:
+                            self.pathMap.set(maploc,0)
+
+    # input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
+    def next_move(self, start_maploc, end_maploc):
+        dirdict = {(1, 0): 'East', (1, 1): 'NorthEast', (0, 1): 'North', (-1, 1): 'Northwest', \
+                   (-1, 0): 'East', (-1, -1): 'Southwest', (0, -1): 'South', (1, -1): 'Southeast'}
+        start_loc = (start_maploc.x,start_maploc.y)
+        end_loc = (end_maploc.x,end_maploc.y)
+        mypath = pathing(self.pathMap, start_loc, end_loc)
+        while True:
+            if mypath.state == 'return':
+                break
+            mypath.nextStep()
         mypath.nextStep()
-    mypath.nextStep()
-    # since there are many options for going back, I default to the first... this can change
-    mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
-    return dirdict.get(mydir)
+        # since there are many options for going back, I default to the first... this can change
+        mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
+        return dirdict.get(mydir)
 
-
-def walking_dist(map,start_loc,end_loc):
-    mypath = pathing(map,start_loc,end_loc)
-    while mypath.state != 'arrived':
-        mypath.nextStep()
-    return mypath.return_dist
-
-
-# create function to convert map to pathfinding map
+    def walking_dist(self, start_maploc, end_maploc):
+        start_loc = (start_maploc.x, start_maploc.y)
+        end_loc = (end_maploc.x, end_maploc.y)
+        mypath = pathing(self.pathMap, start_loc, end_loc)
+        while mypath.state != 'arrived':
+            mypath.nextStep()
+        return mypath.return_dist
 
 
 def invert(loc):#assumes Earth
@@ -217,50 +309,51 @@ def onEarth(loc):
     if (loc.x<0) or (loc.y<0) or (loc.x>=earthMap.width) or (loc.y>=earthMap.height): return False
     return True
 
-class mmap():
-    def __init__(self,width,height):
-        self.width=width
-        self.height=height
-        self.arr=[[0]*self.height for i in range(self.width)];
-    def onMap(self,loc):
-        if (loc.x<0) or (loc.y<0) or (loc.x>=self.width) or (loc.y>=self.height): return False
-        return True
-    def get(self,mapLocation):
-        if not self.onMap(mapLocation):return -1
-        return self.arr[mapLocation.x][mapLocation.y]
-    def set(self,mapLocation,val):
-        self.arr[mapLocation.x][mapLocation.y]=val
-    def printout(self):
-        print('printing map:')
-        for y in range(self.height):
-            buildstr=''
-            for x in range(self.width):
-                buildstr+=format(self.arr[x][self.height-1-y],'2d')
-            print(buildstr)
-    def addDisk(self,mapLocation,r2,val):
-        locs = gc.all_locations_within(mapLocation,r2)
-        for loc in locs:
-            if self.onMap(loc):
-                self.set(loc,self.get(loc)+val)
-    def multiply(self,mmap2):
-        for x in range(self.width):
-            for y in range(self.height):
-                ml = bc.MapLocation(bc.Planet.Earth,x,y);
-                self.set(ml,self.get(ml)*mmap2.get(ml))
-    def findBest(self,mapLocation,r2):
-        locs = gc.all_locations_within(mapLocation,r2)
-        bestAmt = 0
-        bestLoc = None
-        for loc in locs:
-            amt = self.get(loc)
-            if amt>bestAmt:
-                bestAmt=amt
-                bestLoc=loc
-        return bestAmt, bestLoc
+
+class Kmap:
+    def __init__(self, planet):
+        self.p = planet
+        self.Pmap = gc.starting_map(self.p)
+        self.Kmap = mmap(self.Pmap.width, self.Pmap.height)
+        for x in range(self.Pmap.width):
+            for y in range(self.Pmap.height):
+                ml = bc.MapLocation(self.p, x, y)
+                self.Kmap.set(ml, self.Pmap.initial_karbonite_at(ml))
+
+    def update_kmap(self): #update karbonite map
+        for x in range(self.Pmap.width):
+            for y in range(self.Pmap.height):
+                ml = bc.MapLocation(self.p, x, y)
+                if gc.can_sense_location(ml):
+                    self.Kmap.set(ml,gc.karbonite_at)
+
+    def closest_K(self,unit,pathMap):
+        distDict = []
+        minDist = None
+        minML = unit.location.map_location()
+        for x in range(self.Pmap.width):
+            for y in range(self.Pmap.height):
+                ml = bc.MapLocation(self.p, x, y)
+                if self.Kmap.get(ml) != 0:
+                    distDict.append([ml,pathMap.walking_dist(unit.location.map_location(),ml)])
+        if len(distDict) > 0:
+            for key, value in distDict:
+                if minDist == None:
+                    minDist = value
+                    minML = key
+                elif value > minDist:
+                    minDist = value
+                    minML = key
+            return minML
+        else:
+            return 0 #no karbonite
+
+
 
 if gc.planet() == bc.Planet.Earth:
     gc.queue_research(bc.UnitType.Worker)
     gc.queue_research(bc.UnitType.Ranger)
+    gc.queue_research(bc.UnitType.Rocket)
     gc.queue_research(bc.UnitType.Mage)
     gc.queue_research(bc.UnitType.Ranger)
     gc.queue_research(bc.UnitType.Ranger)
@@ -269,6 +362,12 @@ if gc.planet() == bc.Planet.Earth:
     oneLoc = gc.my_units()[0].location.map_location()
     loadStart = time.time()
     earthMap = gc.starting_map(bc.Planet.Earth)
+
+    path_map = pathMap(bc.Planet.Earth)
+    print(path_map)
+    path_map.update_pathmap_units()
+    k_map = Kmap(bc.Planet.Earth)
+
     loadEnd = time.time()
     print('loading the map took '+str(loadEnd-loadStart)+'s')
     enemyStart = invert(oneLoc);
@@ -307,25 +406,25 @@ if gc.planet() == bc.Planet.Earth:
     accessEnd=time.time()
     print('accessing (x10,000) the local map took '+str(accessEnd-accessStart)+'s')
 
-    #generate an ordered list of karbonite locations, sorted by distance to start
-    tOrderStart=time.time()
-    kLocs = []
-    currentLocs = []
-    evalMap = mmap(earthMap.width,earthMap.height)
-    for unit in gc.my_units():
-        currentLocs.append(unit.location.map_location())
-    while(len(currentLocs)>0):
-        nextLocs = []
-        for loc in currentLocs:
-            for dir in directions:
-                newPlace = loc.add(dir)
-                if evalMap.get(newPlace)==0:
-                    evalMap.set(newPlace,1)
-                    nextLocs.append(newPlace)
-                    if kMap.get(newPlace)>0:
-                        kLocs.append(loc)
-        currentLocs=nextLocs
-    print('generating kLocs took '+str(time.time()-tOrderStart)+'s')
+    # #generate an ordered list of karbonite locations, sorted by distance to start
+    # tOrderStart=time.time()
+    # kLocs = []
+    # currentLocs = []
+    # evalMap = mmap(earthMap.width,earthMap.height)
+    # for unit in gc.my_units():
+    #     currentLocs.append(unit.location.map_location())
+    # while(len(currentLocs)>0):
+    #     nextLocs = []
+    #     for loc in currentLocs:
+    #         for dir in directions:
+    #             newPlace = loc.add(dir)
+    #             if evalMap.get(newPlace)==0:
+    #                 evalMap.set(newPlace,1)
+    #                 nextLocs.append(newPlace)
+    #                 if kMap.get(newPlace)>0:
+    #                     kLocs.append(loc)
+    #     currentLocs=nextLocs
+    # print('generating kLocs took '+str(time.time()-tOrderStart)+'s')
 
 def rotate(dir,amount):
     ind = directions.index(dir)
@@ -346,6 +445,7 @@ def fuzzygoto(unit,dest):
             if gc.can_move(unit.id, d):
                 gc.move_robot(unit.id,d)
                 break
+
 
 def checkK(loc):
     if not onEarth(loc): return 0
@@ -432,25 +532,26 @@ while True:
                         print("Made blueprint\n")
                         continue
 
+
+                #build rockets
+
+                if gc.round() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
+                    if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
+                        gc.blueprint(unit.id, bc.UnitType.Rocket, d)
+                        continue
+
+
+
+                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
+
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
+
                 for adjacent in adjacentUnits:#build
                     if gc.can_build(unit.id,adjacent.id):
                         gc.build(unit.id,adjacent.id)
                         print("Building blueprint\n")
                         continue
-                '''
-                #build rocket
-                if gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
-                    if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
-                        gc.blueprint(unit.id, bc.UnitType.Rocket, d)
-                        continue
 
-                    adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
-                    for adjacent in adjacentUnits:#build
-                        if gc.can_build(unit.id,adjacent.id):
-                            gc.build(unit.id,adjacent.id)
-                            continue
-                '''
                 #head toward blueprint location
                 if gc.is_move_ready(unit.id):
                     if blueprintWaiting:
@@ -467,16 +568,28 @@ while True:
                         gc.harvest(unit.id,bestDir)
                         print("Worker harvested karbonite\n")
                         continue
+
+
+                        #change------------------------------------------------------
                 elif gc.is_move_ready(unit.id):#need to go looking for karbonite
-                    if len(kLocs)>0:
-                        dest=kLocs[0]
-                        if gc.can_sense_location(dest):
-                            kAmt = gc.karbonite_at(dest)
-                            if kAmt==0:
-                                kLocs.pop(0)
-                            else:
-                                fuzzygoto(unit,dest)
-                                print("Worker moved\n")
+                    k_map.update_kmap()
+                    ml = k_map.closest_K(unit,path_map)
+                    if ml != 0: # 0 indicates no karbonite left
+                        path_map.update_pathmap_units()
+                        next_mo = path_map.next_move(unit.location.map_location(),ml)
+                        gc.move_robot(unit.id,next_mo)
+
+
+
+                    # if len(kLocs)>0:
+                    #     dest=kLocs[0]
+                    #     if gc.can_sense_location(dest):
+                    #         kAmt = gc.karbonite_at(dest)
+                    #         if kAmt==0:
+                    #             kLocs.pop(0)
+                    #         else:
+                    #             fuzzygoto(unit,dest)
+                    #             print("Worker moved\n")
 
             if unit.unit_type == bc.UnitType.Factory:
                 garrison = unit.structure_garrison()
@@ -487,7 +600,13 @@ while True:
                         print("Unloaded Garrison\n")
                         continue
 
+<<<<<<< HEAD
                 if numRangers <= 8: #produce Rangers up to 8, then produce Mages up to 8, then keep on producing Rangers.
+=======
+                #TODO: make this not random and stuff (Zoe)
+                a=random.randint(0,2)
+                if a==1:
+>>>>>>> a3656610b4040c94f224c0399a2c67c7c0d60f8a
                     if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
@@ -496,11 +615,30 @@ while True:
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print("Produced Mage\n")
                         continue
+<<<<<<< HEAD
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
             
+=======
+            #LAUNCH ROCKET
+
+            if unit.unit_type == bc.UnitType.Rocket:
+                # get locations on Mars to land on
+                landing_locs = []
+                marsMap=gc.starting_map(bc.Planet.Mars)
+                for loc in marsMap:
+                    if is_passable_terrain_at(loc):
+                        landing_locs += loc
+
+                if can_launch_rocket(unit.id, unit.location.map_location(landing_locs[0])) and not has_asteroid(gc.round):
+                    launch_rocket(unit.id, unit.location.map_location(landing_locs[0]))
+
+                continue
+
+
+>>>>>>> a3656610b4040c94f224c0399a2c67c7c0d60f8a
 
             if unit.unit_type == bc.UnitType.Mage:
                 if not unit.location.is_in_garrison():#can't move from inside a factory
