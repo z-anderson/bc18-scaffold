@@ -514,6 +514,7 @@ while True:
                         continue
 
 
+
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
@@ -572,10 +573,21 @@ while True:
                         print("Produced Mage\n")
                         continue
             #LAUNCH ROCKET
-            '''
+
             if unit.unit_type == bc.UnitType.Rocket:
-                if can_launch_rocket(unit.id, )
-            '''
+                # get locations on Mars to land on
+                landing_locs = []
+                marsMap=gc.starting_map(bc.Planet.Mars)
+                for loc in marsMap:
+                    if is_passable_terrain_at(loc):
+                        landing_locs += loc
+
+                if can_launch_rocket(unit.id, unit.location.map_location(landing_locs[0])):
+                    launch_rocket(unit.id, unit.location.map_location(landing_locs[0]))
+
+                continue
+
+
 
             if unit.unit_type == bc.UnitType.Mage:
                 if not unit.location.is_in_garrison():#can't move from inside a factory
