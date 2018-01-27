@@ -168,11 +168,12 @@ class tile:
 
 #for pathfinding
 class pathing:
+
     def __init__(self, map, start, end):
         self.map = map
-        self.md = [[0] * len(self.map[0]) for i in range(len(self.map))]
-        for i in range(len(self.map)):
-            for j in range(len(self.map[0])):
+        self.md = [[0] * self.map.width for i in range(self.map.height)]
+        for i in range(self.map.width):
+            for j in range(self.map.height):
                 self.md[i][j] = tile(vector(i, j), 10000)
         self.start = vector(start)
         self.start.of(self.md).dist = 0
@@ -185,9 +186,9 @@ class pathing:
         self.return_dist = 0
 
     def isOpen(self, loc, dist):
-        onMap = (loc.x >= 0) & (loc.x < len(self.map)) & (loc.y >= 0) & (loc.y < len(self.map[0]))
+        onMap = (loc.x >= 0) & (loc.x < self.map.width) & (loc.y >= 0) & (loc.y < self.map.height)
         if not onMap: return False
-        traversable = loc.of(self.map) == 0
+        traversable = loc.of(self.map.arr) == 0
         acceptablePathLength = dist <= loc.of(self.md).dist
         return traversable & acceptablePathLength
 
@@ -221,27 +222,27 @@ class pathing:
                 self.return_dist -= 1 # to account for extra step
             self.return_dist += 1
 
-# input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
-def next_move(map,start_loc,end_loc):
-    dirdict = {(1, 0): 'East', (1, 1): 'NorthEast', (0, 1): 'North', (-1, 1): 'Northwest',\
-               (-1, 0): 'East',(-1, -1): 'Southwest', (0, -1): 'South', (1, -1): 'Southeast'}
-
-    mypath = pathing(map,start_loc,end_loc)
-    while True:
-        if mypath.state == 'return':
-            break
-        mypath.nextStep()
-    mypath.nextStep()
-    # since there are many options for going back, I default to the first... this can change
-    mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
-    return dirdict.get(mydir)
-
-
-def walking_dist(map,start_loc,end_loc):
-    mypath = pathing(map,start_loc,end_loc)
-    while mypath.state != 'arrived':
-        mypath.nextStep()
-    return mypath.return_dist
+# # input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
+# def next_move(map,start_loc,end_loc):
+#     dirdict = {(1, 0): 'East', (1, 1): 'NorthEast', (0, 1): 'North', (-1, 1): 'Northwest',\
+#                (-1, 0): 'East',(-1, -1): 'Southwest', (0, -1): 'South', (1, -1): 'Southeast'}
+#
+#     mypath = pathing(map,start_loc,end_loc)
+#     while True:
+#         if mypath.state == 'return':
+#             break
+#         mypath.nextStep()
+#     mypath.nextStep()
+#     # since there are many options for going back, I default to the first... this can change
+#     mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
+#     return dirdict.get(mydir)
+#
+#
+# def walking_dist(map,start_loc,end_loc):
+#     mypath = pathing(map,start_loc,end_loc)
+#     while mypath.state != 'arrived':
+#         mypath.nextStep()
+#     return mypath.return_dist
 
 
 class pathMap:
@@ -271,6 +272,30 @@ class pathMap:
                         except:
                             self.pathMap.set(maploc,0)
 
+    # input like (x,y); map should be 2D array; '0' on the map means not traversable, returns Direction
+    def next_move(self, start_maploc, end_maploc):
+        dirdict = {(1, 0): 'East', (1, 1): 'NorthEast', (0, 1): 'North', (-1, 1): 'Northwest', \
+                   (-1, 0): 'East', (-1, -1): 'Southwest', (0, -1): 'South', (1, -1): 'Southeast'}
+        start_loc = (start_maploc.x,start_maploc.y)
+        end_loc = (end_maploc.x,end_maploc.y)
+        mypath = pathing(self.pathMap, start_loc, end_loc)
+        while True:
+            if mypath.state == 'return':
+                break
+            mypath.nextStep()
+        mypath.nextStep()
+        # since there are many options for going back, I default to the first... this can change
+        mydir = (mypath.cpts[0].x - end_loc[0], end_loc[1] - mypath.cpts[0].y)
+        return dirdict.get(mydir)
+
+    def walking_dist(self, start_maploc, end_maploc):
+        start_loc = (start_maploc.x, start_maploc.y)
+        end_loc = (end_maploc.x, end_maploc.y)
+        mypath = pathing(self.pathMap, start_loc, end_loc)
+        while mypath.state != 'arrived':
+            mypath.nextStep()
+        return mypath.return_dist
+
 
 def invert(loc):#assumes Earth
     newx = earthMap.width-loc.x
@@ -288,8 +313,8 @@ def onEarth(loc):
 class Kmap:
     def __init__(self, planet):
         self.p = planet
-        self.Kmap = mmap(self.p.width, self.p.height)
         self.Pmap = gc.starting_map(self.p)
+        self.Kmap = mmap(self.Pmap.width, self.Pmap.height)
         for x in range(self.Pmap.width):
             for y in range(self.Pmap.height):
                 ml = bc.MapLocation(self.p, x, y)
@@ -302,30 +327,26 @@ class Kmap:
                 if gc.can_sense_location(ml):
                     self.Kmap.set(ml,gc.karbonite_at)
 
-    def closest_K(self,unit):
-        distDict = {}
+    def closest_K(self,unit,pathMap):
+        distDict = []
         minDist = None
         minML = unit.location.map_location()
         for x in range(self.Pmap.width):
             for y in range(self.Pmap.height):
                 ml = bc.MapLocation(self.p, x, y)
-                distDict[ml] = unit.location.map_location().distance_squared_to(ml)
-        for key, value in distDict.items():
-            if minDist == None:
-                minDist = value
-                minML = key
-            elif value > minDist:
-                minDist = value
-                minML = key
-
-        return minML
-
-
-
-
-
-
-
+                if self.Kmap.get(ml) != 0:
+                    distDict.append([ml,pathMap.walking_dist(unit.location.map_location(),ml)])
+        if len(distDict) > 0:
+            for key, value in distDict:
+                if minDist == None:
+                    minDist = value
+                    minML = key
+                elif value > minDist:
+                    minDist = value
+                    minML = key
+            return minML
+        else:
+            return 0 #no karbonite
 
 
 
@@ -385,25 +406,25 @@ if gc.planet() == bc.Planet.Earth:
     accessEnd=time.time()
     print('accessing (x10,000) the local map took '+str(accessEnd-accessStart)+'s')
 
-    #generate an ordered list of karbonite locations, sorted by distance to start
-    tOrderStart=time.time()
-    kLocs = []
-    currentLocs = []
-    evalMap = mmap(earthMap.width,earthMap.height)
-    for unit in gc.my_units():
-        currentLocs.append(unit.location.map_location())
-    while(len(currentLocs)>0):
-        nextLocs = []
-        for loc in currentLocs:
-            for dir in directions:
-                newPlace = loc.add(dir)
-                if evalMap.get(newPlace)==0:
-                    evalMap.set(newPlace,1)
-                    nextLocs.append(newPlace)
-                    if kMap.get(newPlace)>0:
-                        kLocs.append(loc)
-        currentLocs=nextLocs
-    print('generating kLocs took '+str(time.time()-tOrderStart)+'s')
+    # #generate an ordered list of karbonite locations, sorted by distance to start
+    # tOrderStart=time.time()
+    # kLocs = []
+    # currentLocs = []
+    # evalMap = mmap(earthMap.width,earthMap.height)
+    # for unit in gc.my_units():
+    #     currentLocs.append(unit.location.map_location())
+    # while(len(currentLocs)>0):
+    #     nextLocs = []
+    #     for loc in currentLocs:
+    #         for dir in directions:
+    #             newPlace = loc.add(dir)
+    #             if evalMap.get(newPlace)==0:
+    #                 evalMap.set(newPlace,1)
+    #                 nextLocs.append(newPlace)
+    #                 if kMap.get(newPlace)>0:
+    #                     kLocs.append(loc)
+    #     currentLocs=nextLocs
+    # print('generating kLocs took '+str(time.time()-tOrderStart)+'s')
 
 def rotate(dir,amount):
     ind = directions.index(dir)
@@ -540,16 +561,28 @@ while True:
                         gc.harvest(unit.id,bestDir)
                         print("Worker harvested karbonite\n")
                         continue
+
+
+                        #change------------------------------------------------------
                 elif gc.is_move_ready(unit.id):#need to go looking for karbonite
-                    if len(kLocs)>0:
-                        dest=kLocs[0]
-                        if gc.can_sense_location(dest):
-                            kAmt = gc.karbonite_at(dest)
-                            if kAmt==0:
-                                kLocs.pop(0)
-                            else:
-                                fuzzygoto(unit,dest)
-                                print("Worker moved\n")
+                    k_map.update_kmap()
+                    ml = k_map.closest_K(unit,path_map)
+                    if ml != 0: # 0 indicates no karbonite left
+                        path_map.update_pathmap_units()
+                        next_mo = path_map.next_move(unit.location.map_location(),ml)
+                        gc.move_robot(unit.id,next_mo)
+
+
+
+                    # if len(kLocs)>0:
+                    #     dest=kLocs[0]
+                    #     if gc.can_sense_location(dest):
+                    #         kAmt = gc.karbonite_at(dest)
+                    #         if kAmt==0:
+                    #             kLocs.pop(0)
+                    #         else:
+                    #             fuzzygoto(unit,dest)
+                    #             print("Worker moved\n")
 
             if unit.unit_type == bc.UnitType.Factory:
                 garrison = unit.structure_garrison()
