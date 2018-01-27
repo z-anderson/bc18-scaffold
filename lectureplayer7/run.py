@@ -393,8 +393,10 @@ while True:
             print("Printing the fmap\n")
             fmap.printout()
 
-        #count things: unfinished buildings, workers
+        #count things: unfinished buildings, workers, mages, Rangers
         numWorkers = 0
+        numMages = 0
+        numRangers = 0
         blueprintLocation = None
         blueprintWaiting = False
         for unit in gc.my_units():
@@ -405,6 +407,10 @@ while True:
                     blueprintWaiting = True
             if unit.unit_type== bc.UnitType.Worker:
                 numWorkers+=1
+            if unit.unit_type == bc.UnitType.Ranger:
+                numRangers+=1
+            if unit.unit_type == bc.UnitType.Mage:
+                numMages += 1
 
         for unit in gc.my_units():
             if unit.unit_type == bc.UnitType.Worker:
@@ -481,16 +487,20 @@ while True:
                         print("Unloaded Garrison\n")
                         continue
 
-                a=random.randint(0,2)
-                if a==1:
+                if numRangers <= 8: #produce Rangers up to 8, then produce Mages up to 8, then keep on producing Rangers.
                     if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Ranger
+                elif numMages <= 8 and gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Mage
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print("Produced Mage\n")
                         continue
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print("Produced Ranger\n")
+                        continue
+            
 
             if unit.unit_type == bc.UnitType.Mage:
                 if not unit.location.is_in_garrison():#can't move from inside a factory

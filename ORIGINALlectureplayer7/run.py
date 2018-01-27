@@ -206,17 +206,20 @@ while True:
 					for d in directions:
 						if gc.can_replicate(unit.id,d):
 							gc.replicate(unit.id,d)
+							print("Replicated Worker")
 							replicated=True
 							break
 					if replicated:continue
 				if gc.karbonite() > bc.UnitType.Factory.blueprint_cost():#blueprint
 					if gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
 						gc.blueprint(unit.id, bc.UnitType.Factory, d)
+						print("Created Blueprint")
 						continue
 				adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
 				for adjacent in adjacentUnits:#build
 					if gc.can_build(unit.id,adjacent.id):
 						gc.build(unit.id,adjacent.id)
+						print("Building blueprint")
 						continue
 				#head toward blueprint location
 				if gc.is_move_ready(unit.id):
@@ -225,12 +228,14 @@ while True:
 						bdist = ml.distance_squared_to(blueprintLocation)
 						if bdist>2:
 							fuzzygoto(unit,blueprintLocation)
+							print("Worker moved")
 							continue
 				#harvest karbonite from nearby
 				mostK, bestDir = bestKarboniteDirection(unit.location.map_location())
 				if mostK>0:#found some karbonite to harvest
 					if gc.can_harvest(unit.id,bestDir):
 						gc.harvest(unit.id,bestDir)
+						print("Harvested Karbonite")
 						continue
 				elif gc.is_move_ready(unit.id):#need to go looking for karbonite
 					if len(kLocs)>0:
@@ -241,6 +246,7 @@ while True:
 								kLocs.pop(0)
 							else:
 								fuzzygoto(unit,dest)
+								print("Worker moved")
 
 			if unit.unit_type == bc.UnitType.Factory:
 				garrison = unit.structure_garrison()
@@ -248,9 +254,11 @@ while True:
 					d = random.choice(directions)
 					if gc.can_unload(unit.id, d):
 						gc.unload(unit.id, d)
+						print("Unloaded garrison")
 						continue
 				elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Mages
 					gc.produce_robot(unit.id, bc.UnitType.Ranger)
+					print("Produced Ranger")
 					continue
 
 			if unit.unit_type == bc.UnitType.Ranger:
@@ -259,6 +267,7 @@ while True:
 					if len(attackableEnemies)>0:
 						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): # CHANGED
 							gc.attack(unit.id, attackableEnemies[0].id)
+							print("Ranger attacks")
 					elif gc.is_move_ready(unit.id):
 						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
 						if len(nearbyEnemies)>0:
@@ -266,6 +275,7 @@ while True:
 						else:
 							destination=enemyStart
 						fuzzygoto(unit,destination)
+						print("Ranger moves")
 
 			# attack
 			# if other.team != my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, other.id):
