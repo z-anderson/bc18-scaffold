@@ -479,8 +479,10 @@ while True:
             print("Printing the fmap\n")
             fmap.printout()
 
-        #count things: unfinished buildings, workers
+        #count things: unfinished buildings, workers, mages, Rangers
         numWorkers = 0
+        numMages = 0
+        numRangers = 0
         blueprintLocation = None
         blueprintWaiting = False
         for unit in gc.my_units():
@@ -491,6 +493,10 @@ while True:
                     blueprintWaiting = True
             if unit.unit_type== bc.UnitType.Worker:
                 numWorkers+=1
+            if unit.unit_type == bc.UnitType.Ranger:
+                numRangers+=1
+            if unit.unit_type == bc.UnitType.Mage:
+                numMages += 1
 
         for unit in gc.my_units():
             if unit.unit_type == bc.UnitType.Worker:
@@ -519,6 +525,7 @@ while True:
                     if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                         gc.blueprint(unit.id, bc.UnitType.Rocket, d)
                         continue
+
 
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
@@ -566,22 +573,45 @@ while True:
                         print("Unloaded Garrison\n")
                         continue
 
+<<<<<<< HEAD
+                if numRangers <= 8: #produce Rangers up to 8, then produce Mages up to 8, then keep on producing Rangers.
+=======
                 #TODO: make this not random and stuff (Zoe)
                 a=random.randint(0,2)
                 if a==1:
+>>>>>>> a3656610b4040c94f224c0399a2c67c7c0d60f8a
                     if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Ranger
+                elif numMages <= 8 and gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Mage
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print("Produced Mage\n")
                         continue
+<<<<<<< HEAD
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print("Produced Ranger\n")
+                        continue
+            
+=======
             #LAUNCH ROCKET
-            '''
+
             if unit.unit_type == bc.UnitType.Rocket:
-                if can_launch_rocket(unit.id, )
-            '''
+                # get locations on Mars to land on
+                landing_locs = []
+                marsMap=gc.starting_map(bc.Planet.Mars)
+                for loc in marsMap:
+                    if is_passable_terrain_at(loc):
+                        landing_locs += loc
+
+                if can_launch_rocket(unit.id, unit.location.map_location(landing_locs[0])) and not has_asteroid(gc.round):
+                    launch_rocket(unit.id, unit.location.map_location(landing_locs[0]))
+
+                continue
+
+
+>>>>>>> a3656610b4040c94f224c0399a2c67c7c0d60f8a
 
             if unit.unit_type == bc.UnitType.Mage:
                 if not unit.location.is_in_garrison():#can't move from inside a factory
