@@ -555,14 +555,22 @@ while True:
                         print("Worker harvested karbonite\n")
                         continue
 
-                if gc.is_move_ready(unit.id):  # need to go looking for karbonite
-                    ml = unit.location.map_location()
-                    k_map.update_kmap()
-                    ml2 = k_map.closest_K(unit)
-                    if ml2 and (ml2 != ml or ml2.y != ml.y):  # 0 indicates no karbonite left
-                        path_map.update_pathmap_units(unit)
-                        next_mo, dist = path_map.next_move(ml, ml2)
-                        gc.move_robot(unit.id, next_mo)
+                if gc.is_move_ready(unit.id):
+                    if blueprintWaiting:
+                        ml = unit.location.map_location()
+                        bdist = ml.distance_squared_to(blueprintLocation)
+                        if bdist>2:
+                            fuzzygoto(unit,blueprintLocation)
+                            print("Worker moved")
+                            continue
+                # if gc.is_move_ready(unit.id):  # need to go looking for karbonite
+                #     ml = unit.location.map_location()
+                #     k_map.update_kmap()
+                #     ml2 = k_map.closest_K(unit)
+                #     if ml2 and (ml2 != ml or ml2.y != ml.y):  # 0 indicates no karbonite left
+                #         path_map.update_pathmap_units(unit)
+                #         next_mo, dist = path_map.next_move(ml, ml2)
+                #         gc.move_robot(unit.id, next_mo)
 
             if unit.unit_type == bc.UnitType.Factory:
                 garrison = unit.structure_garrison()
@@ -573,13 +581,12 @@ while True:
                         print("Unloaded Garrison\n")
                         continue
 
-<<<<<<< HEAD
-                if numRangers <= 8: #produce Rangers up to 8, then produce Mages up to 8, then keep on producing Rangers.
-=======
-                #TODO: make this not random and stuff (Zoe)
+                # if numRangers <= 8: #produce Rangers up to 8, then produce Mages up to 8, then keep on producing Rangers.
+
+                # TODO: make this not random and stuff (Zoe)
                 a=random.randint(0,2)
                 if a==1:
->>>>>>> a3656610b4040c94f224c0399a2c67c7c0d60f8a
+
                     if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
@@ -588,13 +595,11 @@ while True:
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print("Produced Mage\n")
                         continue
-<<<<<<< HEAD
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
-            
-=======
+
             #LAUNCH ROCKET
 
             if unit.unit_type == bc.UnitType.Rocket:
@@ -608,10 +613,7 @@ while True:
                 if can_launch_rocket(unit.id, unit.location.map_location(landing_locs[0])) and not has_asteroid(gc.round):
                     launch_rocket(unit.id, unit.location.map_location(landing_locs[0]))
 
-                continue
 
-
->>>>>>> a3656610b4040c94f224c0399a2c67c7c0d60f8a
 
             if unit.unit_type == bc.UnitType.Mage:
                 if not unit.location.is_in_garrison():#can't move from inside a factory
