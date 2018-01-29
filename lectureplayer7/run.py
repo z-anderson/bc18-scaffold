@@ -511,6 +511,8 @@ while True:
                             break
                     if replicated:continue
 
+                print("amt karbonite: ", gc.karbonite)
+
                 #build factory
                 if gc.karbonite() > bc.UnitType.Factory.blueprint_cost():#blueprint
                     if gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
@@ -521,14 +523,10 @@ while True:
 
                 #build rockets
 
-                if gc.round() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
+                if gc.karbonite() > bc.UnitType.Rocket.blueprint_cost(): # try build rockets in general # gc.round() > 500 and
                     if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                         gc.blueprint(unit.id, bc.UnitType.Rocket, d)
                         continue
-
-
-
-                #adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
 
@@ -585,7 +583,32 @@ while True:
 
                 # TODO: make this not random and stuff (Zoe)
 
+                if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+                    if numRangers and numMages != 0:
+                        if numRangers/(numRangers + numMages) < 0.90:
 
+                            gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                            print("Produced Ranger\n")
+                            continue
+                    else:
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print("Produced Ranger\n")
+                        continue
+                    # yeah, that was pretty unpythonic :/
+
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Mage
+                        gc.produce_robot(unit.id, bc.UnitType.Mage)
+                        print("Produced Mage\n")
+                        continue
+                #seems redundant
+                '''
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print("Produced Ranger\n")
+                        continue
+                '''
+
+                '''
                 if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
@@ -594,11 +617,13 @@ while True:
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print("Produced Mage\n")
                         continue
+                #seems redundant
+
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
-
+                '''
             #LAUNCH ROCKET
 
             if unit.unit_type == bc.UnitType.Rocket:
