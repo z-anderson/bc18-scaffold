@@ -5,7 +5,6 @@ import traceback
 import os
 import time
 
-#notes for jordan --> do workers stuff, change fuzzy gotos, rockets!
 
 gc = bc.GameController()
 directions = [bc.Direction.North, bc.Direction.Northeast, bc.Direction.East, bc.Direction.Southeast, bc.Direction.South, bc.Direction.Southwest, bc.Direction.West, bc.Direction.Northwest]
@@ -479,24 +478,44 @@ while True:
             print("Printing the fmap\n")
             fmap.printout()
 
+
+        k_map.update_kmap()
         #count things: unfinished buildings, workers, mages, Rangers
         numWorkers = 0
         numMages = 0
         numRangers = 0
-        blueprintLocation = None
-        blueprintWaiting = False
+        numFactories = 0
+        numRockets = 0
+        factoryBlueprintLocation = None
+        factoryBlueprintWaiting = False
+        rocketBlueprintWaiting = False
+        rocketBlueprintLocation = None
+
+
         for unit in gc.my_units():
             if unit.unit_type== bc.UnitType.Factory:
                 if not unit.structure_is_built():
                     ml = unit.location.map_location()
-                    blueprintLocation = ml
-                    blueprintWaiting = True
+                    factoryBlueprintLocation = ml
+                    factoryBlueprintWaiting = True
+                    numFactories += 1
+            if unit.unit_type== bc.UnitType.Rocket:
+                if not unit.structure_is_built():
+                    ml = unit.location.map_location()
+                    rocketBlueprintWaiting = False
+                    rocketBlueprintLocation = ml
+                    numRockets += 1
             if unit.unit_type== bc.UnitType.Worker:
                 numWorkers+=1
             if unit.unit_type == bc.UnitType.Ranger:
                 numRangers+=1
             if unit.unit_type == bc.UnitType.Mage:
                 numMages += 1
+
+        if gc.round() > 300 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost() and numRockets < 3:
+            rocketmode = True
+        else:
+            rocketmode = False
 
         for unit in gc.my_units():
             if unit.unit_type == bc.UnitType.Worker:
@@ -511,17 +530,18 @@ while True:
                             break
                     if replicated:continue
 
+                if rocketmode:
+
+
                 #build factory
-                if gc.karbonite() > bc.UnitType.Factory.blueprint_cost():#blueprint
+                if numFactories < 8 and gc.karbonite() > bc.UnitType.Factory.blueprint_cost():#blueprint
                     if gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
                         gc.blueprint(unit.id, bc.UnitType.Factory, d)
                         print("Made blueprint\n")
                         continue
 
-
                 #build rockets
-
-                if gc.round() > 500 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
+                if numRockets < 5 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
                     if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
                         gc.blueprint(unit.id, bc.UnitType.Rocket, d)
                         continue
@@ -530,7 +550,7 @@ while True:
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
 
-                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
+                # adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
 
                 for adjacent in adjacentUnits:#build
                     if gc.can_build(unit.id,adjacent.id):
@@ -563,14 +583,12 @@ while True:
                             fuzzygoto(unit,blueprintLocation)
                             print("Worker moved")
                             continue
-                # if gc.is_move_ready(unit.id):  # need to go looking for karbonite
-                #     ml = unit.location.map_location()
-                #     k_map.update_kmap()
-                #     ml2 = k_map.closest_K(unit)
-                #     if ml2 and (ml2 != ml or ml2.y != ml.y):  # 0 indicates no karbonite left
-                #         path_map.update_pathmap_units(unit)
-                #         next_mo, dist = path_map.next_move(ml, ml2)
-                #         gc.move_robot(unit.id, next_mo)
+                if gc.is_move_ready(unit.id):#need to go looking for karbonite
+                    ml = unit.location.map_location()
+                    ml2 = k_map.closest_K(unit)
+                    if ml2 and (ml2 != ml or ml2.y != ml.y):# 0 indicates no karbonite left
+                        fuzzygoto(unit.ml2)
+
 
             if unit.unit_type == bc.UnitType.Factory:
                 garrison = unit.structure_garrison()
