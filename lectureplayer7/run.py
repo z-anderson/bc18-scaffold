@@ -528,7 +528,7 @@ while True:
 
 
 
-                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
+                #adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
 
                 adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
 
@@ -584,10 +584,9 @@ while True:
                 # if numRangers <= 8: #produce Rangers up to 8, then produce Mages up to 8, then keep on producing Rangers.
 
                 # TODO: make this not random and stuff (Zoe)
-                a=random.randint(0,2)
-                if a==1:
 
-                    if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+
+                if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
