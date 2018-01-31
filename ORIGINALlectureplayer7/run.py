@@ -261,12 +261,34 @@ while True:
                     print("Produced Ranger")
                     continue
 
+<<<<<<< HEAD
             if unit.unit_type == bc.UnitType.Ranger:
                 if not unit.location.is_in_garrison():#can't move from inside a factory
                     attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
                     if len(attackableEnemies)>0:
                         if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): # CHANGED
                             gc.attack(unit.id, attackableEnemies[0].id)
+=======
+			if unit.unit_type == bc.UnitType.Ranger:
+				if not unit.location.is_in_garrison():#can't move from inside a factory
+					attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
+					if len(attackableEnemies)>0:
+						if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): # CHANGED
+							gc.attack(unit.id, attackableEnemies[0].id)
+
+							print("Ranger attacks")
+
+							print("ranger attacked")
+
+					elif gc.is_move_ready(unit.id):
+						nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
+						if len(nearbyEnemies)>0:
+							destination=nearbyEnemies[0].location.map_location()
+						else:
+							destination=enemyStart
+						fuzzygoto(unit,destination)
+						print("Ranger moves")
+>>>>>>> 27a0ef0d62a453ec06da9a2bdfa3e3602caa66ff
 
                     elif gc.is_move_ready(unit.id):
                         nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)

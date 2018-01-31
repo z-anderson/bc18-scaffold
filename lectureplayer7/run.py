@@ -329,11 +329,13 @@ class Kmap:
                         closestk = bc.MapLocation(self.p, x, y)
 
         if closestk:
-            return closestk
+            return minDist, closestk
         else:
             return None #no karbonite
 
-
+if gc.planet() == bc.Planet.Mars:
+    marsPathMap = pathMap(bc.Planet.Mars)
+    rocket_locations = []
 
 if gc.planet() == bc.Planet.Earth:
     gc.queue_research(bc.UnitType.Worker)
@@ -430,6 +432,15 @@ def fuzzygoto(unit,dest):
             if gc.can_move(unit.id, d):
                 gc.move_robot(unit.id,d)
                 break
+def myfuzzygoto(unit,dest):
+    if unit.location.map_location()==dest:return
+    toward = unit.location.map_location().direction_to(dest)
+    for tilt in tryRotate:
+        d = rotate(toward,tilt)
+        if gc.can_move(unit.id, d):
+            gc.move_robot(unit.id,d)
+            return True
+    return False
 
 
 def checkK(loc):
@@ -479,43 +490,43 @@ while True:
             fmap.printout()
 
 
-        k_map.update_kmap()
         #count things: unfinished buildings, workers, mages, Rangers
         numWorkers = 0
+        workerJob = {"k":0,"r":0,"f":0,"b":0}
         numMages = 0
         numRangers = 0
         numFactories = 0
         numRockets = 0
-        factoryBlueprintLocation = None
-        factoryBlueprintWaiting = False
-        rocketBlueprintWaiting = False
-        rocketBlueprintLocation = None
+        blueprintLocation = []
 
 
         for unit in gc.my_units():
             if unit.unit_type== bc.UnitType.Factory:
                 if not unit.structure_is_built():
                     ml = unit.location.map_location()
-                    factoryBlueprintLocation = ml
-                    factoryBlueprintWaiting = True
+                    blueprintLocation.append(ml)
                     numFactories += 1
             if unit.unit_type== bc.UnitType.Rocket:
                 if not unit.structure_is_built():
                     ml = unit.location.map_location()
-                    rocketBlueprintWaiting = False
-                    rocketBlueprintLocation = ml
+                    blueprintLocation.append((ml))
                     numRockets += 1
             if unit.unit_type== bc.UnitType.Worker:
                 numWorkers+=1
+                numWorkers += 1
             if unit.unit_type == bc.UnitType.Ranger:
                 numRangers+=1
             if unit.unit_type == bc.UnitType.Mage:
                 numMages += 1
 
-        if gc.round() > 300 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost() and numRockets < 3:
+
+        workersLeft = numWorkers
+        if gc.round() > 300 and gc.karbonite() < bc.UnitType.Rocket.blueprint_cost() and numRockets < 1:
             rocketmode = True
         else:
             rocketmode = False
+
+
 
         for unit in gc.my_units():
             if unit.unit_type == bc.UnitType.Worker:
@@ -528,66 +539,217 @@ while True:
                             print("Replicated Worker\n")
                             replicated=True
                             break
-                    if replicated:continue
+                    if replicated:
+                        continue
 
                 if rocketmode:
+                    if gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
+                        bpRocket = False
+                        for d in directions:
+                            if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
+                                gc.blueprint(unit.id, bc.UnitType.Rocket, d)
+                                workerJob["r"] += 1
+                                workersLeft -= 1
+                                bpRocket = True
+                                continue
+                        if bp: continue
 
+
+                print("amt karbonite: ", gc.karbonite())
+
+                #build
+                if workerJob.get("b") < numWorkers//3:
+                    adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
+                    for adjacent in adjacentUnits:  # build
+                        if gc.can_build(unit.id, adjacent.id):
+                            gc.build(unit.id, adjacent.id)
+                            workerJob["b"] += 1
+                            workersLeft -= 1
+                            print("Building blueprint\n")
+                            break
+                    if gc.can_build(unit.id,adjacent.id):
+                        continue
 
                 #build factory
-                if numFactories < 8 and gc.karbonite() > bc.UnitType.Factory.blueprint_cost():#blueprint
-                    if gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
-                        gc.blueprint(unit.id, bc.UnitType.Factory, d)
-                        print("Made blueprint\n")
-                        continue
+                if not rocketmode:
+                    if workerJob.get("f") < numWorkers // 3:
+                        if numFactories < 6 and gc.karbonite() > bc.UnitType.Factory.blueprint_cost():#blueprint
+                            if gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
+                                gc.blueprint(unit.id, bc.UnitType.Factory, d)
+                                workerJob["f"] += 1
+                                print("Made blueprint\n")
+                                workersLeft -= 1
+                                continue
 
-                #build rockets
-                if numRockets < 5 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
-                    if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
-                        gc.blueprint(unit.id, bc.UnitType.Rocket, d)
-                        continue
+                # harvest Karbonite
+                if workerJob.get("k") < numWorkers//3:
+                    harvested = False
+                    for d in directions:
+                        if gc.can_harvest(unit.id,d):
+                            harvested = True
+                            gc.harvest(unit.id,d)
+                            workerJob["k"] += 1
+                            workersLeft -= 1
+                            print("Worker harvested karbonite\n")
+                            break
+                    if harvested: continue
 
-
-
-                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
-
-                # adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
-
-                for adjacent in adjacentUnits:#build
-                    if gc.can_build(unit.id,adjacent.id):
-                        gc.build(unit.id,adjacent.id)
-                        print("Building blueprint\n")
-                        continue
-
-                #head toward blueprint location
-                if gc.is_move_ready(unit.id):
-                    if blueprintWaiting:
-                        ml = unit.location.map_location()
-                        bdist = ml.distance_squared_to(blueprintLocation)
-                        if bdist>2:
-                            fuzzygoto(unit,blueprintLocation)
-                            print("Worker moved\n")
+                #build or move to blueprint
+                if workerJob.get("b") < len(blueprintLocation)*2:
+                    didHarvestOrBuild = False
+                    adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
+                    for adjacent in adjacentUnits:  # build
+                        if gc.can_build(unit.id, adjacent.id):
+                            didHarvestOrBuild = True
+                            gc.build(unit.id, adjacent.id)
+                            print("Building blueprint\n")
+                            break
+                    if didHarvestOrBuild: continue
+                    elif gc.is_move_ready(unit.id):
+                        minBP = 1000
+                        for bp in blueprintLocation:
+                            distBP = unit.location.map_location().distance_squared_to(bp)
+                            if distBP <= minBP:
+                                minBP = distBP
+                                bestBP = bp
+                        if myfuzzygoto(unit,bestBP):
+                            workersLeft -= 1
+                            workerJob["b"] += 1
                             continue
-                #harvest karbonite from nearby
-                mostK, bestDir = bestKarboniteDirection(unit.location.map_location())
-                if mostK>0:#found some karbonite to harvest
-                    if gc.can_harvest(unit.id,bestDir):
-                        gc.harvest(unit.id,bestDir)
+
+                #harvest or move to karbonite
+                if workersLeft < numWorkers // 3 - workerJob.get("k"):
+                    didHarvestOrBuild = False
+                    for d in directions:
+                        if gc.can_harvest(unit.id, d):
+                            didHarvestOrBuild = True
+                            gc.harvest(unit.id, d)
+                            workerJob["k"] += 1
+                            workersLeft -= 1
+                            print("Worker harvested karbonite\n")
+                            continue
+                    if didHarvestOrBuild: continue
+                    elif gc.is_move_ready(unit.id):
+                        k_map.update_kmap()
+                        distK, kML = k_map.closest_K(unit)
+                        if myfuzzygoto(unit, kML):
+                            workerJob["k"] += 1
+                            workersLeft -= 1
+                            continue
+
+                if gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
+                    bpRocket = False
+                    for d in directions:
+                        if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
+                            gc.blueprint(unit.id, bc.UnitType.Rocket, d)
+                            workerJob["r"] += 1
+                            workersLeft -= 1
+                            bpRocket = True
+                            break
+                    if bpRocket: continue
+
+                didHarvestOrBuild = False
+                for d in directions:
+                    if gc.can_harvest(unit.id, d):
+                        didHarvestOrBuild = True
+                        gc.harvest(unit.id, d)
+                        workerJob["k"] += 1
+                        workersLeft -= 1
                         print("Worker harvested karbonite\n")
-                        continue
+                        break
+                if didHarvestOrBuild: continue
 
-                if gc.is_move_ready(unit.id):
-                    if blueprintWaiting:
-                        ml = unit.location.map_location()
-                        bdist = ml.distance_squared_to(blueprintLocation)
-                        if bdist>2:
-                            fuzzygoto(unit,blueprintLocation)
-                            print("Worker moved")
-                            continue
-                if gc.is_move_ready(unit.id):#need to go looking for karbonite
-                    ml = unit.location.map_location()
-                    ml2 = k_map.closest_K(unit)
-                    if ml2 and (ml2 != ml or ml2.y != ml.y):# 0 indicates no karbonite left
-                        fuzzygoto(unit.ml2)
+                adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2)
+                for adjacent in adjacentUnits:  # build
+                    if gc.can_build(unit.id, adjacent.id):
+                        didHarvestOrBuild = True
+                        gc.build(unit.id, adjacent.id)
+                        workerJob["b"] += 1
+                        workersLeft -= 1
+                        print("Building blueprint\n")
+                        break
+                if didHarvestOrBuild: continue
+
+                if gc.is_move_ready(unit.id) and len(blueprintLocation) > 0:
+                    k_map.update_kmap()
+                    distK, kML = k_map.closest_K(unit)
+                    for bp in blueprintLocation:
+                        distBP = unit.location.map_location().distance_squared_to(bp)
+                        if distBP <= distK:
+                            distK = distBP
+                            bestBP = bp
+                            workerJob["k"] += 1
+                            workersLeft -= 1
+                    myfuzzygoto(unit,bestBP)
+                    continue
+
+
+
+
+
+                # #build rockets
+                #
+                # if numRockets < 5 and gc.karbonite() > bc.UnitType.Rocket.blueprint_cost():
+                #
+                # if gc.karbonite() > bc.UnitType.Rocket.blueprint_cost(): # try build rockets in general # gc.round() > 500 and
+                #
+                #     if gc.can_blueprint(unit.id, bc.UnitType.Rocket, d):
+                #         gc.blueprint(unit.id, bc.UnitType.Rocket, d)
+                #         continue
+                #
+                #
+                #
+                # adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 2) #comment this out? -Zoe
+                #
+                # # adjacentUnits = gc.sense_nearby_units(unit.location.map_location(), 50)
+                #
+                # for adjacent in adjacentUnits:#build
+                #     if gc.can_build(unit.id,adjacent.id):
+                #         gc.build(unit.id,adjacent.id)
+                #         print("Building blueprint\n")
+                #         continue
+                #
+                # #head toward blueprint location
+                # if gc.is_move_ready(unit.id):
+                #     if blueprintWaiting:
+                #         ml = unit.location.map_location()
+                #         bdist = ml.distance_squared_to(blueprintLocation)
+                #         if bdist>2:
+                #             fuzzygoto(unit,blueprintLocation)
+                #             print("Worker moved\n")
+                #             continue
+                # #harvest karbonite from nearby
+                # mostK, bestDir = bestKarboniteDirection(unit.location.map_location())
+                # if mostK>0:#found some karbonite to harvest
+                #     if gc.can_harvest(unit.id,bestDir):
+                #         gc.harvest(unit.id,bestDir)
+                #         print("Worker harvested karbonite\n")
+                #         continue
+                #
+                # if gc.is_move_ready(unit.id):
+                #     if blueprintWaiting:
+                #         ml = unit.location.map_location()
+                #         bdist = ml.distance_squared_to(blueprintLocation)
+                #         if bdist>2:
+                #             fuzzygoto(unit,blueprintLocation)
+                #             print("Worker moved")
+                #             continue
+                # if gc.is_move_ready(unit.id):#need to go looking for karbonite
+                #     ml = unit.location.map_location()
+                #     ml2 = k_map.closest_K(unit)
+                #     if ml2 and (ml2 != ml or ml2.y != ml.y):# 0 indicates no karbonite left
+                #         fuzzygoto(unit.ml2)
+
+
+
+
+
+
+
+
+
+
+
 
 
             if unit.unit_type == bc.UnitType.Factory:
@@ -602,10 +764,34 @@ while True:
                 # if numRangers <= 8: #produce Rangers up to 8, then produce Mages up to 8, then keep on producing Rangers.
 
                 # TODO: make this not random and stuff (Zoe)
-                a=random.randint(0,2)
-                if a==1:
 
-                    if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+                if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+                    if numRangers and numMages != 0:
+                        if numRangers/(numRangers + numMages) < 0.90:
+
+                            gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                            print("Produced Ranger\n")
+                            continue
+                    else:
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print("Produced Ranger\n")
+                        continue
+                    # yeah, that was pretty unpythonic :/
+
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Mage):#produce Mage
+                        gc.produce_robot(unit.id, bc.UnitType.Mage)
+                        print("Produced Mage\n")
+                        continue
+                #seems redundant
+                '''
+                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print("Produced Ranger\n")
+                        continue
+                '''
+
+                '''
+                if gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
@@ -613,23 +799,24 @@ while True:
                         gc.produce_robot(unit.id, bc.UnitType.Mage)
                         print("Produced Mage\n")
                         continue
+                #seems redundant
+
                 elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Ranger
                         gc.produce_robot(unit.id, bc.UnitType.Ranger)
                         print("Produced Ranger\n")
                         continue
-
+                '''
             #LAUNCH ROCKET
 
             if unit.unit_type == bc.UnitType.Rocket:
                 # get locations on Mars to land on
-                landing_locs = []
-                marsMap=gc.starting_map(bc.Planet.Mars)
-                for loc in marsMap:
-                    if is_passable_terrain_at(loc):
-                        landing_locs += loc
-
-                if can_launch_rocket(unit.id, unit.location.map_location(landing_locs[0])) and not has_asteroid(gc.round):
-                    launch_rocket(unit.id, unit.location.map_location(landing_locs[0]))
+                marsPathMap.update_pathmap_units()
+                for x in marsPathMap.w:
+                    for y in marsPathMap.h:
+                        ml = bc.MapLocation(bc.Planet.Mars,x,y)
+                        if not ml in rocket_locations:
+                            if can_launch_rocket(unit.id, ml):
+                                launch_rocket(unit.id, ml)
 
 
 
