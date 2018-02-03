@@ -69,6 +69,7 @@ class mmap():
 
 if gc.planet() == bc.Planet.Earth:
     gc.queue_research(bc.UnitType.Worker)
+    gc.queue_research(bc.UnitType.Rocket)
     gc.queue_research(bc.UnitType.Ranger)
     gc.queue_research(bc.UnitType.Ranger)
     oneLoc = gc.my_units()[0].location.map_location()
@@ -176,6 +177,17 @@ else:
 
 while True:
     try:
+        if gc.planet() == bc.Planet.Mars:
+            for unit in gc.my_units():
+                if unit.unit_type == bc.UnitType.Rocket:
+                    garrison = unit.structure_garrison()
+                    if len(garrison) > 0:  # ungarrison
+                        d = random.choice(directions)
+                        if gc.can_unload(unit.id, d):
+                            gc.unload(unit.id, d)
+                            print("Unloaded garrison")
+                            continue
+
         #prepare danger zone map
         dmap = mmap(w,h)
         for unit in gc.units():
@@ -191,6 +203,7 @@ while True:
         blueprintWaiting = False
         numRockets = 0
         rocketFinished = []
+        numRangers = 0
 
         for unit in gc.my_units():
             if unit.unit_type== bc.UnitType.Factory:
@@ -203,10 +216,16 @@ while True:
             if unit.unit_type == bc.UnitType.Rocket:
                 if not unit.structure_is_built():
                     ml = unit.location.map_location()
-                    rockets.append((ml))
+                    rocketFinished.append(unit)
                     numRockets += 1
                 else:
                     rocketFinished.append(unit)
+            if unit.unit_type == bc.UnitType.Ranger:
+                numRangers += 1
+        if gc.round() > 250 and numRockets < 3 and gc.karbonite() < 1.5 * bc.UnitType.Rocket.blueprint_cost():
+            rocketMode = True
+        else:
+            rocketMode = False
 
         for unit in gc.my_units():
             for rocket in rocketFinished:  # build
@@ -281,10 +300,15 @@ while True:
                         gc.unload(unit.id, d)
                         print("Unloaded garrison")
                         continue
-                elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Mages
-                    gc.produce_robot(unit.id, bc.UnitType.Ranger)
-                    print("Produced Ranger")
-                    continue
+                if not rocketMode:
+                    if numWorkers <= numRangers//3 and gc.can_produce_robot(unit.id, bc.UnitType.Worker):#produce Mages
+                        gc.produce_robot(unit.id, bc.UnitType.Worker)
+                        print("Produced Ranger")
+                        continue
+                    elif gc.can_produce_robot(unit.id, bc.UnitType.Ranger):#produce Mages
+                        gc.produce_robot(unit.id, bc.UnitType.Ranger)
+                        print("Produced Ranger")
+                        continue
 
             if unit.unit_type == bc.UnitType.Rocket:
                 # get locations on Mars to land on
@@ -292,38 +316,36 @@ while True:
                 mw = marsMap.width
                 mh = marsMap.height
                 # check if garrison is full?????--------------------------------------------------------
-                for x in mw:
-                    for y in mh:
+                for x in range(mw):
+                    for y in range(mh):
                         ml = bc.MapLocation(bc.Planet.Mars, x, y)
-                        if not ml in rocket_locations:
-                            if can_launch_rocket(unit.id, ml):
-                                launch_rocket(unit.id, ml)
-                                print("launched")
+                        # if not ml in rocket_locations:
+                        if marsMap.is_passable_terrain_at(ml) and gc.can_launch_rocket(unit.id, ml):
+                            gc.launch_rocket(unit.id, ml)
+                            print("launched")
+
+
+
             if unit.unit_type == bc.UnitType.Ranger:
-                if not unit.location.is_in_garrison():#can't move from inside a factory
-                    attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
-                    if len(attackableEnemies)>0:
-                        if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): # CHANGED
-                            gc.attack(unit.id, attackableEnemies[0].id)
-            if unit.unit_type == bc.UnitType.Ranger:
-                if not unit.location.is_in_garrison():#can't move from inside a factory
-                    attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
-                    if len(attackableEnemies)>0:
-                        if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): # CHANGED
-                            gc.attack(unit.id, attackableEnemies[0].id)
+                for i in [0,0]:
+                    if not unit.location.is_in_garrison():#can't move from inside a factory
+                        attackableEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.attack_range(),enemy_team)
+                        if len(attackableEnemies)>0:
+                            if gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, attackableEnemies[0].id): # CHANGED
+                                gc.attack(unit.id, attackableEnemies[0].id)
 
-                            print("Ranger attacks")
+                                print("Ranger attacks")
 
-                            print("ranger attacked")
+                                print("ranger attacked")
 
-                    elif gc.is_move_ready(unit.id):
-                        nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
-                        if len(nearbyEnemies)>0:
-                            destination=nearbyEnemies[0].location.map_location()
-                        else:
-                            destination=enemyStart
-                        fuzzygoto(unit,destination)
-                        print("Ranger moves")
+                        elif gc.is_move_ready(unit.id):
+                            nearbyEnemies = gc.sense_nearby_units_by_team(unit.location.map_location(),unit.vision_range,enemy_team)
+                            if len(nearbyEnemies)>0:
+                                destination=nearbyEnemies[0].location.map_location()
+                            else:
+                                destination=enemyStart
+                            fuzzygoto(unit,destination)
+                            print("Ranger moves")
 
             # attack
             # if other.team != my_team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, other.id):
